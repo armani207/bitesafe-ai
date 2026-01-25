@@ -1,256 +1,203 @@
+import { useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { useAppStore, useWeekStats, useTodayMeals } from '@/store/appStore';
-import { StatCard } from '@/components/ui/StatCard';
+import { useAppStore } from '@/store/appStore';
+import { WeeklyRiskChart, CarbsBreakdownChart } from '@/components/insights/WeeklyCharts';
+import { WeeklyStatsCard } from '@/components/insights/WeeklyStatsCard';
+import { PatternsAnalysis, PersonalizedRecommendations } from '@/components/insights/PatternsAnalysis';
 import { motion } from 'framer-motion';
 import { 
   TrendingUp, 
-  TrendingDown, 
-  Activity, 
   Utensils, 
-  Flame,
-  Beef,
-  Wheat,
-  Target,
-  Award,
-  AlertTriangle
+  BarChart3,
+  Lightbulb,
+  Sparkles
 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function InsightsPage() {
   const { meals, healthProfile } = useAppStore();
-  const weekStats = useWeekStats();
-  const todayMeals = useTodayMeals();
 
-  const todayCarbs = todayMeals.reduce(
-    (acc, meal) => acc + (meal.totalCarbs.min + meal.totalCarbs.max) / 2,
-    0
-  );
-  const todayCalories = todayMeals.reduce(
-    (acc, meal) => acc + meal.totalCalories,
-    0
-  );
-  const todayProtein = todayMeals.reduce(
-    (acc, meal) => acc + meal.totalProtein,
-    0
-  );
+  // Get this week's and last week's meals
+  const { weekMeals, prevWeekMeals } = useMemo(() => {
+    const today = new Date();
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const twoWeeksAgo = new Date(today);
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
 
-  const avgRisk = weekStats.mealCount > 0 ? weekStats.avgRiskScore : 0;
-  const riskTrend = avgRisk > 50 ? 'up' : avgRisk < 30 ? 'down' : 'stable';
+    const week = meals.filter((m) => new Date(m.timestamp) >= weekAgo);
+    const prevWeek = meals.filter((m) => {
+      const date = new Date(m.timestamp);
+      return date >= twoWeeksAgo && date < weekAgo;
+    });
 
-  // Generate insights based on data
-  const insights = [
-    ...(avgRisk > 60 ? [{
-      type: 'warning' as const,
-      icon: AlertTriangle,
-      title: 'High spike risk detected',
-      description: 'Your recent meals have been high in refined carbs. Consider adding more protein and fiber.',
-    }] : []),
-    ...(weekStats.mealCount >= 7 ? [{
-      type: 'achievement' as const,
-      icon: Award,
-      title: 'Consistent tracker!',
-      description: `You've logged ${weekStats.mealCount} meals this week. Keep it up!`,
-    }] : []),
-    ...(avgRisk < 35 && weekStats.mealCount > 3 ? [{
-      type: 'achievement' as const,
-      icon: Target,
-      title: 'Great food choices',
-      description: 'Your average risk score is low. Your glucose should be stable.',
-    }] : []),
-  ];
+    return { weekMeals: week, prevWeekMeals: prevWeek };
+  }, [meals]);
 
   return (
     <AppLayout
       headerProps={{
-        title: 'Insights',
-        subtitle: 'Your health at a glance',
+        title: 'Weekly Insights',
+        subtitle: 'Your health patterns at a glance',
       }}
     >
-      <div className="-mt-4 rounded-t-3xl bg-background px-4 pt-6">
-        {/* Today's Summary */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
-        >
-          <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
-            Today
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            <StatCard
-              label="Carbs"
-              value={Math.round(todayCarbs)}
-              unit="g"
-              variant="carbs"
-              icon={Wheat}
-            />
-            <StatCard
-              label="Calories"
-              value={Math.round(todayCalories)}
-              unit="kcal"
-              variant="calories"
-              icon={Flame}
-            />
-            <StatCard
-              label="Protein"
-              value={Math.round(todayProtein)}
-              unit="g"
-              variant="protein"
-              icon={Beef}
-            />
-            <StatCard
-              label="Meals"
-              value={todayMeals.length}
-              variant="default"
-              icon={Utensils}
-            />
-          </div>
-        </motion.div>
+      <div className="-mt-4 rounded-t-3xl bg-background px-4 pt-6 pb-6">
+        {meals.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-6">
+              <TabsTrigger value="overview" className="text-xs sm:text-sm">
+                <BarChart3 className="mr-1.5 h-4 w-4" />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="patterns" className="text-xs sm:text-sm">
+                <TrendingUp className="mr-1.5 h-4 w-4" />
+                Patterns
+              </TabsTrigger>
+              <TabsTrigger value="tips" className="text-xs sm:text-sm">
+                <Lightbulb className="mr-1.5 h-4 w-4" />
+                Tips
+              </TabsTrigger>
+            </TabsList>
 
-        {/* Weekly Stats */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-6"
-        >
-          <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
-            This Week
-          </h3>
-          <div className="rounded-xl border border-border bg-card p-4">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Avg. Risk Score</p>
-                <p className="text-3xl font-bold">
-                  {avgRisk}
-                  <span className="ml-1 text-lg font-normal text-muted-foreground">%</span>
-                </p>
-              </div>
-              <div
-                className={`flex items-center gap-1 rounded-full px-3 py-1 text-sm font-medium ${
-                  riskTrend === 'up'
-                    ? 'bg-risk-high/10 text-risk-high'
-                    : riskTrend === 'down'
-                    ? 'bg-success/10 text-success'
-                    : 'bg-muted text-muted-foreground'
-                }`}
+            <TabsContent value="overview" className="space-y-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
               >
-                {riskTrend === 'up' ? (
-                  <TrendingUp className="h-4 w-4" />
-                ) : riskTrend === 'down' ? (
-                  <TrendingDown className="h-4 w-4" />
-                ) : (
-                  <Activity className="h-4 w-4" />
-                )}
-                {riskTrend === 'up' ? 'Higher' : riskTrend === 'down' ? 'Lower' : 'Stable'}
-              </div>
-            </div>
+                <WeeklyStatsCard meals={weekMeals} previousWeekMeals={prevWeekMeals} />
+              </motion.div>
 
-            <div className="grid grid-cols-3 gap-4 border-t border-border pt-4">
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">Meals</p>
-                <p className="text-lg font-semibold">{weekStats.mealCount}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">Avg Carbs</p>
-                <p className="text-lg font-semibold">{weekStats.avgCarbs}g</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">Avg Cal</p>
-                <p className="text-lg font-semibold">{weekStats.avgCalories}</p>
-              </div>
-            </div>
-          </div>
-        </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
+                  Risk Score Trend
+                </h3>
+                <div className="rounded-xl border border-border bg-card p-4">
+                  <WeeklyRiskChart meals={meals} />
+                </div>
+              </motion.div>
 
-        {/* Insights */}
-        {insights.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mb-6"
-          >
-            <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
-              Insights
-            </h3>
-            <div className="space-y-3">
-              {insights.map((insight, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 + i * 0.1 }}
-                  className={`flex items-start gap-3 rounded-xl p-4 ${
-                    insight.type === 'warning'
-                      ? 'bg-warning/10'
-                      : insight.type === 'achievement'
-                      ? 'bg-success/10'
-                      : 'bg-secondary'
-                  }`}
-                >
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                      insight.type === 'warning'
-                        ? 'bg-warning text-warning-foreground'
-                        : insight.type === 'achievement'
-                        ? 'bg-success text-success-foreground'
-                        : 'bg-primary text-primary-foreground'
-                    }`}
-                  >
-                    <insight.icon className="h-5 w-5" />
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
+                  Daily Carbs (Color = Risk Level)
+                </h3>
+                <div className="rounded-xl border border-border bg-card p-4">
+                  <CarbsBreakdownChart meals={meals} />
+                </div>
+                <div className="mt-2 flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-2.5 w-2.5 rounded-full bg-risk-low" />
+                    <span>Low</span>
                   </div>
-                  <div className="flex-1">
-                    <h4 className="font-semibold">{insight.title}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {insight.description}
-                    </p>
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-2.5 w-2.5 rounded-full bg-risk-medium" />
+                    <span>Medium</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-2.5 w-2.5 rounded-full bg-risk-high" />
+                    <span>High</span>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Goals */}
+              {healthProfile && healthProfile.goals.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
+                    Your Goals
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {healthProfile.goals.map((goal) => (
+                      <div
+                        key={goal.id}
+                        className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2"
+                      >
+                        <span>{goal.icon}</span>
+                        <span className="text-sm font-medium">{goal.name}</span>
+                      </div>
+                    ))}
                   </div>
                 </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
+              )}
+            </TabsContent>
 
-        {/* Profile summary */}
-        {healthProfile && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mb-6"
-          >
-            <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
-              Your Goals
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {healthProfile.goals.map((goal) => (
-                <div
-                  key={goal.id}
-                  className="flex items-center gap-2 rounded-full bg-secondary px-4 py-2"
-                >
-                  <span>{goal.icon}</span>
-                  <span className="text-sm font-medium">{goal.name}</span>
+            <TabsContent value="patterns" className="space-y-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <div className="mb-4 flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold">Detected Patterns</h3>
                 </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
+                <p className="mb-4 text-sm text-muted-foreground">
+                  Based on your meal history, we've identified these patterns:
+                </p>
+                <PatternsAnalysis meals={meals} healthProfile={healthProfile} />
+              </motion.div>
+            </TabsContent>
 
-        {meals.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="rounded-xl border border-dashed border-border p-8 text-center"
-          >
-            <Utensils className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-            <h3 className="mb-1 font-semibold">No data yet</h3>
-            <p className="text-sm text-muted-foreground">
-              Scan your first meal to start seeing insights
-            </p>
-          </motion.div>
+            <TabsContent value="tips" className="space-y-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <div className="mb-4 flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold">Personalized Recommendations</h3>
+                </div>
+                <p className="mb-4 text-sm text-muted-foreground">
+                  Tailored suggestions based on your health profile and eating habits:
+                </p>
+                <PersonalizedRecommendations meals={meals} healthProfile={healthProfile} />
+              </motion.div>
+
+              {/* Disclaimer */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="rounded-xl border border-border bg-muted/50 p-4"
+              >
+                <p className="text-xs text-muted-foreground">
+                  <strong>Disclaimer:</strong> These recommendations are for informational purposes only 
+                  and should not replace advice from your healthcare provider. Always consult your 
+                  doctor or dietitian before making significant changes to your diet.
+                </p>
+              </motion.div>
+            </TabsContent>
+          </Tabs>
         )}
       </div>
     </AppLayout>
+  );
+}
+
+function EmptyState() {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="rounded-xl border border-dashed border-border p-8 text-center"
+    >
+      <Utensils className="mx-auto mb-3 h-12 w-12 text-muted-foreground" />
+      <h3 className="mb-2 text-lg font-semibold">No data yet</h3>
+      <p className="text-sm text-muted-foreground">
+        Scan your first meal to start seeing insights and patterns
+      </p>
+    </motion.div>
   );
 }
