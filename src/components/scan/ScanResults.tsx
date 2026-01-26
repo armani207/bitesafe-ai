@@ -4,7 +4,7 @@ import { RiskBadge, RiskAlert } from '@/components/ui/RiskBadge';
 import { SuggestionGrid, TipCard } from '@/components/ui/SuggestionCard';
 import { StatRow } from '@/components/ui/StatCard';
 import { MealAnalysis } from '@/types/health';
-import { Save, RefreshCw, AlertCircle } from 'lucide-react';
+import { Save, RefreshCw, AlertCircle, Target, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ScanResultsProps {
@@ -14,6 +14,19 @@ interface ScanResultsProps {
 }
 
 export function ScanResults({ meal, onSave, onReset }: ScanResultsProps) {
+  // Determine predictive framing
+  const riskFraming = meal.riskLevel === 'high' 
+    ? 'This meal is likely to cause significant glucose elevation'
+    : meal.riskLevel === 'medium'
+    ? 'This meal may cause moderate glucose increase'
+    : 'This meal is expected to have minimal glucose impact';
+
+  const expectedImpact = meal.riskLevel === 'high'
+    ? 'Elevated spike risk within 30-60 minutes'
+    : meal.riskLevel === 'medium'
+    ? 'Moderate glucose response expected'
+    : 'Glucose likely to remain stable';
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -32,10 +45,30 @@ export function ScanResults({ meal, onSave, onReset }: ScanResultsProps) {
         </div>
       )}
 
+      {/* Predictive Risk Assessment */}
+      <div className={`rounded-xl p-4 ${
+        meal.riskLevel === 'high' ? 'bg-risk-high/10 border border-risk-high/30' :
+        meal.riskLevel === 'medium' ? 'bg-risk-medium/10 border border-risk-medium/30' :
+        'bg-success/10 border border-success/30'
+      }`}>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-muted-foreground">Projected Glucose Impact</span>
+          <RiskBadge level={meal.riskLevel} score={meal.riskScore} pulse={meal.riskLevel === 'high'} />
+        </div>
+        <p className={`font-semibold ${
+          meal.riskLevel === 'high' ? 'text-risk-high' :
+          meal.riskLevel === 'medium' ? 'text-risk-medium' :
+          'text-success'
+        }`}>
+          {riskFraming}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">{expectedImpact}</p>
+      </div>
+
       {/* Detected Foods */}
       {meal.foods.length > 0 && (
         <div className="rounded-xl border border-border bg-card p-4">
-          <h3 className="mb-3 text-sm font-semibold">Detected Foods</h3>
+          <h3 className="mb-3 text-sm font-semibold">Identified Items</h3>
           <div className="space-y-2">
             {meal.foods.map((food, i) => (
               <div key={i} className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2">
@@ -50,51 +83,61 @@ export function ScanResults({ meal, onSave, onReset }: ScanResultsProps) {
         </div>
       )}
 
-      {/* Carbs & Risk Score */}
-      <div className="flex items-center justify-between">
-        <div className="rounded-lg bg-secondary px-4 py-2">
-          <span className="text-sm text-muted-foreground">Carbs: </span>
-          <span className="font-semibold">
+      {/* Carbs Summary */}
+      <div className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
+        <div>
+          <span className="text-sm text-muted-foreground">Total Carbohydrate Load</span>
+          <div className="text-2xl font-bold">
             ~{meal.totalCarbs.min}-{meal.totalCarbs.max}g
-          </span>
+          </div>
         </div>
-        <RiskBadge level={meal.riskLevel} score={meal.riskScore} pulse={meal.riskLevel === 'high'} />
+        <div className="text-right">
+          <span className="text-sm text-muted-foreground">Risk Score</span>
+          <div className={`text-2xl font-bold ${
+            meal.riskLevel === 'high' ? 'text-risk-high' :
+            meal.riskLevel === 'medium' ? 'text-risk-medium' :
+            'text-success'
+          }`}>
+            {meal.riskScore}%
+          </div>
+        </div>
       </div>
-
-      {/* Risk Alert */}
-      <RiskAlert level={meal.riskLevel} message={meal.riskExplanation} />
 
       {/* Medical Disclaimer */}
       <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-xs">
         <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
         <p className="text-muted-foreground">
-          This is for informational purposes only. Do not use for insulin dosing. 
-          Always consult your healthcare provider for medical decisions.
+          <strong>Clinical Note:</strong> This assessment is for decision support only. Do not use for insulin dosing. 
+          Always consult your healthcare provider for treatment decisions.
         </p>
       </div>
 
-      {/* Suggestions */}
+      {/* Risk Mitigation Actions */}
       {meal.suggestions.length > 0 && (
         <div>
-          <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
-            Make It Safer
-          </h3>
+          <div className="flex items-center gap-2 mb-3">
+            <Target className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold">Risk Mitigation Actions</h3>
+          </div>
           <SuggestionGrid
             suggestions={meal.suggestions}
-            onSelect={(s) => toast.info(`Tip: ${s.text}`)}
+            onSelect={(s) => toast.info(`Recommended: ${s.text}`)}
           />
         </div>
       )}
 
-      {/* Tips */}
+      {/* Evidence-Based Tips */}
       {meal.tips.length > 0 && (
         <div>
           <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
-            Tips for You
+            Evidence-Based Adjustments
           </h3>
           <div className="space-y-2">
             {meal.tips.map((tip, i) => (
-              <TipCard key={i} icon={i === 0 ? '💡' : '🎯'} text={tip} />
+              <div key={i} className="flex items-start gap-2 rounded-lg bg-primary/5 p-3">
+                <ArrowRight className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                <p className="text-sm">{tip}</p>
+              </div>
             ))}
           </div>
         </div>
@@ -102,7 +145,7 @@ export function ScanResults({ meal, onSave, onReset }: ScanResultsProps) {
 
       {/* Nutrient summary */}
       <div className="rounded-xl border border-border bg-card p-4">
-        <h3 className="mb-3 text-sm font-semibold">Nutrition Estimate</h3>
+        <h3 className="mb-3 text-sm font-semibold">Nutritional Composition</h3>
         <StatRow
           items={[
             { label: 'Calories', value: meal.totalCalories, unit: 'kcal' },
@@ -121,7 +164,7 @@ export function ScanResults({ meal, onSave, onReset }: ScanResultsProps) {
           size="lg"
         >
           <Save className="mr-2 h-5 w-5" />
-          Save This Meal
+          Log This Meal
         </Button>
         <Button onClick={onReset} variant="outline" size="lg">
           <RefreshCw className="h-5 w-5" />

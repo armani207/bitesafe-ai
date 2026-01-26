@@ -38,9 +38,9 @@ export function Header({ title, subtitle, showGreeting, children }: HeaderProps)
         {showGreeting && userProfile && (
           <div className="mb-2">
             <h1 className="text-xl font-semibold">
-              Hi, {userProfile.name.split(' ')[0]}!
+              Welcome, {userProfile.name.split(' ')[0]}
             </h1>
-            <p className="text-primary-foreground/80">Let's check your meal...</p>
+            <p className="text-primary-foreground/80">Analyze your meal for glucose risk assessment</p>
           </div>
         )}
 
