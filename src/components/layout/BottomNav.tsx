@@ -3,9 +3,9 @@ import { Link, useLocation } from 'react-router-dom';
 import { Scan, Clock, BarChart3, User } from 'lucide-react';
 
 const navItems = [
-  { path: '/scan', label: 'Scan', icon: Scan },
-  { path: '/history', label: 'History', icon: Clock },
-  { path: '/insights', label: 'Insights', icon: BarChart3 },
+  { path: '/scan', label: 'Analyze', icon: Scan },
+  { path: '/history', label: 'Log', icon: Clock },
+  { path: '/insights', label: 'Weekly Brief', icon: BarChart3 },
   { path: '/profile', label: 'Profile', icon: User },
 ];
 

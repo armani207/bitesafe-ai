@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Camera, Upload } from 'lucide-react';
+import { Camera, Upload, Shield, Activity } from 'lucide-react';
 import { HealthProfile } from '@/types/health';
 
 interface ScanUploaderProps {
@@ -35,12 +35,12 @@ export function ScanUploader({ healthProfile, onFileSelect, onDemoScan }: ScanUp
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
           <Camera className="h-8 w-8 text-primary" />
         </div>
-        <h3 className="mb-1 text-lg font-semibold">Take a photo of your meal</h3>
+        <h3 className="mb-1 text-lg font-semibold">Capture meal for analysis</h3>
         <p className="text-sm text-muted-foreground">
-          or tap to upload from gallery
+          Photograph or upload to receive glucose risk assessment
         </p>
         <p className="mt-2 text-xs text-muted-foreground">
-          AI-powered analysis with real nutritional data
+          AI-powered nutritional analysis with personalized risk scoring
         </p>
       </div>
 
@@ -60,7 +60,7 @@ export function ScanUploader({ healthProfile, onFileSelect, onDemoScan }: ScanUp
           size="lg"
         >
           <Camera className="mr-2 h-5 w-5" />
-          Camera
+          Analyze Meal
         </Button>
         <Button
           onClick={onDemoScan}
@@ -69,25 +69,31 @@ export function ScanUploader({ healthProfile, onFileSelect, onDemoScan }: ScanUp
           size="lg"
         >
           <Upload className="mr-2 h-5 w-5" />
-          Demo Scan
+          Demo Analysis
         </Button>
       </div>
 
       {healthProfile && (
-        <div className="rounded-xl bg-secondary p-4">
-          <h4 className="mb-2 text-sm font-semibold">Your Profile</h4>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Shield className="h-4 w-4 text-primary" />
+            <h4 className="text-sm font-semibold">Active Health Profile</h4>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Your risk assessments are personalized based on your health data
+          </p>
           <div className="flex flex-wrap gap-2">
             {healthProfile.diabetesType !== 'none' && (
               <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                {healthProfile.diabetesType === 'type1' ? 'Type 1' : 
-                 healthProfile.diabetesType === 'type2' ? 'Type 2' : 
-                 healthProfile.diabetesType === 'prediabetes' ? 'Prediabetes' : 'Gestational'}
+                {healthProfile.diabetesType === 'type1' ? 'Type 1 Diabetes' : 
+                 healthProfile.diabetesType === 'type2' ? 'Type 2 Diabetes' : 
+                 healthProfile.diabetesType === 'prediabetes' ? 'Prediabetes' : 'Gestational Diabetes'}
               </span>
             )}
             {healthProfile.goals.slice(0, 2).map((goal) => (
               <span
                 key={goal.id}
-                className="rounded-full bg-muted px-3 py-1 text-xs font-medium"
+                className="rounded-full bg-secondary px-3 py-1 text-xs font-medium"
               >
                 {goal.icon} {goal.name}
               </span>
@@ -95,6 +101,15 @@ export function ScanUploader({ healthProfile, onFileSelect, onDemoScan }: ScanUp
           </div>
         </div>
       )}
+
+      {/* Clinical note */}
+      <div className="flex items-start gap-2 rounded-lg bg-muted/50 px-4 py-3">
+        <Activity className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+        <p className="text-xs text-muted-foreground">
+          Results are for informational purposes only and should not replace clinical guidance. 
+          Consult your healthcare provider for treatment decisions.
+        </p>
+      </div>
     </motion.div>
   );
 }
