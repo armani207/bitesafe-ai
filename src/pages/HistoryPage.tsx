@@ -1,13 +1,14 @@
 import { useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { useAppStore } from '@/store/appStore';
+import { useMeals, dbMealToMealAnalysis } from '@/hooks/useSupabase';
 import { RiskBadge } from '@/components/ui/RiskBadge';
-import { format, isToday, isYesterday, formatDistanceToNow, startOfWeek, endOfWeek } from 'date-fns';
-import { Utensils, ChevronRight, Calendar, TrendingUp, AlertTriangle } from 'lucide-react';
+import { format, isToday, isYesterday, formatDistanceToNow, startOfWeek } from 'date-fns';
+import { Utensils, ChevronRight, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function HistoryPage() {
-  const meals = useAppStore((state) => state.meals);
+  const { data: dbMeals = [], isLoading } = useMeals();
+  const meals = useMemo(() => dbMeals.map(dbMealToMealAnalysis), [dbMeals]);
 
   const { weekSummary, groupedMeals, dateKeys } = useMemo(() => {
     const groups: Record<string, typeof meals> = {};
@@ -58,7 +59,11 @@ export default function HistoryPage() {
       }}
     >
       <div className="-mt-4 rounded-t-3xl bg-background px-4 pt-6">
-        {meals.length === 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          </div>
+        ) : meals.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

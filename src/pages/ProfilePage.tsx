@@ -1,5 +1,6 @@
 import { AppLayout } from '@/components/layout/AppLayout';
-import { useAppStore } from '@/store/appStore';
+import { useProfile, useMeals, dbProfileToHealthProfile } from '@/hooks/useSupabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { 
@@ -15,15 +16,25 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useMemo } from 'react';
 
 export default function ProfilePage() {
-  const { userProfile, healthProfile, clearData, meals } = useAppStore();
+  const { signOut } = useAuth();
+  const { data: dbProfile } = useProfile();
+  const { data: dbMeals = [] } = useMeals();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    clearData();
-    toast.success('Logged out successfully');
-    navigate('/');
+  const healthProfile = useMemo(() => dbProfileToHealthProfile(dbProfile ?? null), [dbProfile]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success('Logged out successfully');
+      navigate('/auth');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to log out');
+    }
   };
 
   const bmi = healthProfile 
@@ -82,10 +93,10 @@ export default function ProfilePage() {
         >
           <div className="flex items-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">
-              {userProfile?.name?.charAt(0) || 'U'}
+              {dbProfile?.name?.charAt(0) || dbProfile?.email?.charAt(0) || 'U'}
             </div>
             <div className="flex-1">
-              <h2 className="text-xl font-bold">{userProfile?.name || 'User'}</h2>
+              <h2 className="text-xl font-bold">{dbProfile?.name || 'User'}</h2>
               <p className="text-sm text-muted-foreground">
                 {healthProfile?.diabetesType !== 'none' 
                   ? `${healthProfile?.diabetesType === 'type1' ? 'Type 1' : 
@@ -99,7 +110,7 @@ export default function ProfilePage() {
           {/* Stats */}
           <div className="mt-6 grid grid-cols-3 gap-4 border-t border-border pt-6">
             <div className="text-center">
-              <p className="text-2xl font-bold">{meals.length}</p>
+              <p className="text-2xl font-bold">{dbMeals.length}</p>
               <p className="text-xs text-muted-foreground">Meals Tracked</p>
             </div>
             <div className="text-center">
@@ -227,7 +238,7 @@ export default function ProfilePage() {
             onClick={handleLogout}
           >
             <LogOut className="mr-3 h-5 w-5" />
-            Reset All Data
+            Sign Out
           </Button>
         </motion.div>
       </div>

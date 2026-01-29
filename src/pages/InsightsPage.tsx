@@ -1,23 +1,33 @@
 import { useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { useAppStore } from '@/store/appStore';
+import { useMeals, useGlucoseReadings, useProfile, dbMealToMealAnalysis, dbProfileToHealthProfile } from '@/hooks/useSupabase';
 import { WeeklyRiskChart, CarbsBreakdownChart } from '@/components/insights/WeeklyCharts';
 import { WeeklyStatsCard } from '@/components/insights/WeeklyStatsCard';
 import { PatternsAnalysis, PersonalizedRecommendations } from '@/components/insights/PatternsAnalysis';
+import { generateWeeklyReport, getWeekDateRange } from '@/lib/pdfExport';
 import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
 import { 
   TrendingUp, 
   Utensils, 
   BarChart3,
   Target,
   AlertTriangle,
-  Calendar
+  Calendar,
+  FileText
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
+import { toast } from 'sonner';
 
 export default function InsightsPage() {
-  const { meals, healthProfile } = useAppStore();
+  const { data: dbMeals = [] } = useMeals();
+  const { data: glucoseReadings = [] } = useGlucoseReadings();
+  const { data: dbProfile } = useProfile();
+
+  // Convert DB data to app types
+  const meals = useMemo(() => dbMeals.map(dbMealToMealAnalysis), [dbMeals]);
+  const healthProfile = useMemo(() => dbProfileToHealthProfile(dbProfile ?? null), [dbProfile]);
 
   // Get this week's and last week's meals
   const { weekMeals, prevWeekMeals, weekStart, weekEnd } = useMemo(() => {
@@ -40,6 +50,26 @@ export default function InsightsPage() {
 
   const weekDateRange = `${format(weekStart, 'MMM d')} – ${format(weekEnd, 'MMM d, yyyy')}`;
 
+  const handleExportPDF = () => {
+    try {
+      generateWeeklyReport({
+        meals,
+        glucoseReadings: glucoseReadings.map(r => ({
+          id: r.id,
+          value: Number(r.value),
+          reading_type: r.reading_type,
+          created_at: r.created_at,
+        })),
+        healthProfile,
+        dateRange: getWeekDateRange(),
+      });
+      toast.success('Weekly report downloaded successfully');
+    } catch (error) {
+      console.error('Failed to generate PDF:', error);
+      toast.error('Failed to generate report');
+    }
+  };
+
   return (
     <AppLayout
       headerProps={{
@@ -48,6 +78,18 @@ export default function InsightsPage() {
       }}
     >
       <div className="-mt-4 rounded-t-3xl bg-background px-4 pt-6 pb-6">
+        {/* Export Button */}
+        {meals.length > 0 && (
+          <Button 
+            onClick={handleExportPDF}
+            variant="outline" 
+            className="w-full mb-6"
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            Export Weekly Report (PDF)
+          </Button>
+        )}
+
         {meals.length === 0 ? (
           <EmptyState />
         ) : (

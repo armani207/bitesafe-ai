@@ -14,7 +14,194 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      glucose_readings: {
+        Row: {
+          created_at: string
+          id: string
+          meal_id: string | null
+          notes: string | null
+          reading_type: string | null
+          source: string | null
+          unit: string | null
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meal_id?: string | null
+          notes?: string | null
+          reading_type?: string | null
+          source?: string | null
+          unit?: string | null
+          user_id: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meal_id?: string | null
+          notes?: string | null
+          reading_type?: string | null
+          source?: string | null
+          unit?: string | null
+          user_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "glucose_readings_meal_id_fkey"
+            columns: ["meal_id"]
+            isOneToOne: false
+            referencedRelation: "meals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meals: {
+        Row: {
+          created_at: string
+          foods: Json
+          id: string
+          image_url: string | null
+          risk_explanation: string | null
+          risk_level: string
+          risk_score: number
+          saved: boolean | null
+          suggestions: Json | null
+          tips: string[] | null
+          total_calories: number
+          total_carbs_max: number
+          total_carbs_min: number
+          total_fat: number
+          total_fiber: number
+          total_protein: number
+          total_sugar: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          foods?: Json
+          id?: string
+          image_url?: string | null
+          risk_explanation?: string | null
+          risk_level?: string
+          risk_score?: number
+          saved?: boolean | null
+          suggestions?: Json | null
+          tips?: string[] | null
+          total_calories?: number
+          total_carbs_max?: number
+          total_carbs_min?: number
+          total_fat?: number
+          total_fiber?: number
+          total_protein?: number
+          total_sugar?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          foods?: Json
+          id?: string
+          image_url?: string | null
+          risk_explanation?: string | null
+          risk_level?: string
+          risk_score?: number
+          saved?: boolean | null
+          suggestions?: Json | null
+          tips?: string[] | null
+          total_calories?: number
+          total_carbs_max?: number
+          total_carbs_min?: number
+          total_fat?: number
+          total_fiber?: number
+          total_protein?: number
+          total_sugar?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          activity_level: string | null
+          age: number | null
+          allergies: string[] | null
+          avatar_url: string | null
+          body_fat_percentage: number | null
+          conditions: Json | null
+          created_at: string
+          diabetes_type: string | null
+          dietary_restrictions: string[] | null
+          email: string | null
+          gender: string | null
+          goals: Json | null
+          healthcare_provider: Json | null
+          height: number | null
+          id: string
+          is_onboarded: boolean | null
+          medications: string[] | null
+          name: string | null
+          target_glucose_max: number | null
+          target_glucose_min: number | null
+          updated_at: string
+          user_id: string
+          uses_insulin: boolean | null
+          weight: number | null
+        }
+        Insert: {
+          activity_level?: string | null
+          age?: number | null
+          allergies?: string[] | null
+          avatar_url?: string | null
+          body_fat_percentage?: number | null
+          conditions?: Json | null
+          created_at?: string
+          diabetes_type?: string | null
+          dietary_restrictions?: string[] | null
+          email?: string | null
+          gender?: string | null
+          goals?: Json | null
+          healthcare_provider?: Json | null
+          height?: number | null
+          id?: string
+          is_onboarded?: boolean | null
+          medications?: string[] | null
+          name?: string | null
+          target_glucose_max?: number | null
+          target_glucose_min?: number | null
+          updated_at?: string
+          user_id: string
+          uses_insulin?: boolean | null
+          weight?: number | null
+        }
+        Update: {
+          activity_level?: string | null
+          age?: number | null
+          allergies?: string[] | null
+          avatar_url?: string | null
+          body_fat_percentage?: number | null
+          conditions?: Json | null
+          created_at?: string
+          diabetes_type?: string | null
+          dietary_restrictions?: string[] | null
+          email?: string | null
+          gender?: string | null
+          goals?: Json | null
+          healthcare_provider?: Json | null
+          height?: number | null
+          id?: string
+          is_onboarded?: boolean | null
+          medications?: string[] | null
+          name?: string | null
+          target_glucose_max?: number | null
+          target_glucose_min?: number | null
+          updated_at?: string
+          user_id?: string
+          uses_insulin?: boolean | null
+          weight?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
