@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useAppStore } from '@/store/appStore';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUpdateProfile } from '@/hooks/useSupabase';
 import { WelcomeStep } from './steps/WelcomeStep';
 import { BasicInfoStep } from './steps/BasicInfoStep';
 import { ConditionsStep } from './steps/ConditionsStep';
@@ -11,6 +12,7 @@ import { AllergiesStep } from './steps/AllergiesStep';
 import { ProviderStep } from './steps/ProviderStep';
 import { CompleteStep } from './steps/CompleteStep';
 import { HealthProfile, UserProfile } from '@/types/health';
+import { toast } from 'sonner';
 
 type OnboardingStep = 
   | 'welcome'
@@ -35,7 +37,8 @@ const stepOrder: OnboardingStep[] = [
 
 export function OnboardingFlow() {
   const navigate = useNavigate();
-  const { setOnboarded, setUserProfile, setHealthProfile } = useAppStore();
+  const { user } = useAuth();
+  const updateProfile = useUpdateProfile();
   
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
   const [userData, setUserData] = useState<Partial<UserProfile>>({});
@@ -63,36 +66,40 @@ export function OnboardingFlow() {
     }
   };
 
-  const handleComplete = () => {
-    // Save all data
-    const userProfile: UserProfile = {
-      id: crypto.randomUUID(),
-      name: userData.name || 'User',
-      email: userData.email || '',
-      createdAt: new Date(),
-    };
+  const handleComplete = async () => {
+    if (!user) {
+      toast.error('Please sign in to continue');
+      navigate('/auth');
+      return;
+    }
 
-    const healthProfile: HealthProfile = {
-      diabetesType: healthData.diabetesType || 'none',
-      usesInsulin: healthData.usesInsulin || false,
-      conditions: healthData.conditions || [],
-      goals: healthData.goals || [],
-      allergies: healthData.allergies || [],
-      dietaryRestrictions: healthData.dietaryRestrictions || [],
-      age: healthData.age || 30,
-      weight: healthData.weight || 70,
-      height: healthData.height || 170,
-      bodyFatPercentage: healthData.bodyFatPercentage,
-      gender: healthData.gender || 'other',
-      activityLevel: healthData.activityLevel || 'moderate',
-      medications: healthData.medications,
-      healthcareProvider: healthData.healthcareProvider,
-    };
+    try {
+      // Save all data to Supabase profile
+      await updateProfile.mutateAsync({
+        name: userData.name || 'User',
+        diabetes_type: healthData.diabetesType || 'none',
+        uses_insulin: healthData.usesInsulin || false,
+        conditions: JSON.parse(JSON.stringify(healthData.conditions || [])),
+        goals: JSON.parse(JSON.stringify(healthData.goals || [])),
+        allergies: healthData.allergies || [],
+        dietary_restrictions: healthData.dietaryRestrictions || [],
+        age: healthData.age || 30,
+        weight: healthData.weight || 70,
+        height: healthData.height || 170,
+        body_fat_percentage: healthData.bodyFatPercentage || null,
+        gender: healthData.gender || 'other',
+        activity_level: healthData.activityLevel || 'moderate',
+        medications: healthData.medications || [],
+        healthcare_provider: healthData.healthcareProvider ? JSON.parse(JSON.stringify(healthData.healthcareProvider)) : null,
+        is_onboarded: true,
+      });
 
-    setUserProfile(userProfile);
-    setHealthProfile(healthProfile);
-    setOnboarded(true);
-    navigate('/scan');
+      toast.success('Profile saved successfully!');
+      navigate('/scan');
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+      toast.error('Failed to save profile. Please try again.');
+    }
   };
 
   const updateUserData = (data: Partial<UserProfile>) => {

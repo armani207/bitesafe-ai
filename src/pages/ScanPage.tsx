@@ -4,7 +4,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { ScanUploader } from '@/components/scan/ScanUploader';
 import { ScanLoading } from '@/components/scan/ScanLoading';
 import { ScanResults } from '@/components/scan/ScanResults';
-import { useAppStore } from '@/store/appStore';
+import { useAddMeal, useProfile, dbProfileToHealthProfile } from '@/hooks/useSupabase';
 import { MealAnalysis, RiskLevel, MealSuggestion } from '@/types/health';
 import { analyzeFoodImage, imageToBase64 } from '@/lib/api/foodAnalysis';
 import { toast } from 'sonner';
@@ -56,9 +56,13 @@ const generateDemoAnalysis = (): MealAnalysis => {
 };
 
 export default function ScanPage() {
-  const { addMeal, currentMeal, setCurrentMeal, healthProfile } = useAppStore();
+  const { data: dbProfile } = useProfile();
+  const healthProfile = dbProfileToHealthProfile(dbProfile ?? null);
+  const addMeal = useAddMeal();
+  
   const [isScanning, setIsScanning] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [currentMeal, setCurrentMeal] = useState<MealAnalysis | null>(null);
 
   const handleFileSelect = async (file: File) => {
     try {
@@ -90,10 +94,30 @@ export default function ScanPage() {
     }
   };
 
-  const handleSaveMeal = () => {
+  const handleSaveMeal = async () => {
     if (currentMeal) {
-      addMeal({ ...currentMeal, saved: true });
-      toast.success('Meal saved to history!');
+      try {
+        await addMeal.mutateAsync({
+          imageUrl: currentMeal.imageUrl,
+          foods: currentMeal.foods,
+          totalCarbs: currentMeal.totalCarbs,
+          totalProtein: currentMeal.totalProtein,
+          totalFat: currentMeal.totalFat,
+          totalCalories: currentMeal.totalCalories,
+          totalFiber: currentMeal.totalFiber,
+          totalSugar: currentMeal.totalSugar,
+          riskLevel: currentMeal.riskLevel,
+          riskScore: currentMeal.riskScore,
+          riskExplanation: currentMeal.riskExplanation,
+          suggestions: currentMeal.suggestions,
+          tips: currentMeal.tips,
+        });
+        toast.success('Meal saved to history!');
+        setCurrentMeal({ ...currentMeal, saved: true });
+      } catch (error) {
+        console.error('Failed to save meal:', error);
+        toast.error('Failed to save meal');
+      }
     }
   };
 

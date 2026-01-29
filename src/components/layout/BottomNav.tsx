@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
-import { Scan, Clock, BarChart3, User } from 'lucide-react';
+import { Scan, Clock, BarChart3, User, Droplet } from 'lucide-react';
 
 const navItems = [
   { path: '/scan', label: 'Analyze', icon: Scan },
   { path: '/history', label: 'Log', icon: Clock },
-  { path: '/insights', label: 'Weekly Brief', icon: BarChart3 },
+  { path: '/glucose', label: 'Glucose', icon: Droplet },
+  { path: '/insights', label: 'Brief', icon: BarChart3 },
   { path: '/profile', label: 'Profile', icon: User },
 ];
 
@@ -25,7 +26,7 @@ export function BottomNav() {
               <Link
                 key={item.path}
                 to={item.path}
-                className="relative flex flex-col items-center gap-1 px-4 py-2"
+                className="relative flex flex-col items-center gap-1 px-3 py-2"
               >
                 <div className="relative">
                   {isActive && (
@@ -36,13 +37,13 @@ export function BottomNav() {
                     />
                   )}
                   <Icon
-                    className={`relative h-6 w-6 transition-colors ${
+                    className={`relative h-5 w-5 transition-colors ${
                       isActive ? 'text-primary' : 'text-muted-foreground'
                     }`}
                   />
                 </div>
                 <span
-                  className={`text-xs font-medium transition-colors ${
+                  className={`text-[10px] font-medium transition-colors ${
                     isActive ? 'text-primary' : 'text-muted-foreground'
                   }`}
                 >
