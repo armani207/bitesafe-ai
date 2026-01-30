@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isAnonymous: boolean;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -21,22 +22,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        setLoading(false);
+        
+        // If no session exists, auto-create anonymous session
+        if (!session && event !== 'SIGNED_OUT') {
+          await createAnonymousSession();
+        } else {
+          setLoading(false);
+        }
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+        setLoading(false);
+      } else {
+        // No session - create anonymous guest
+        await createAnonymousSession();
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const createAnonymousSession = async () => {
+    try {
+      const { data, error } = await supabase.auth.signInAnonymously();
+      
+      if (error) {
+        console.error('Failed to create anonymous session:', error);
+        setLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        setUser(data.user);
+        setSession(data.session);
+        
+        // Create profile for anonymous user
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            user_id: data.user.id,
+            email: null,
+            is_onboarded: false,
+          }, {
+            onConflict: 'user_id'
+          });
+
+        if (profileError) {
+          console.error('Failed to create profile:', profileError);
+        }
+      }
+    } catch (err) {
+      console.error('Anonymous session error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const signUp = async (email: string, password: string) => {
     const redirectUrl = `${window.location.origin}/`;
@@ -61,10 +109,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    // After sign out, create a new anonymous session
+    await createAnonymousSession();
   };
 
+  const isAnonymous = user?.is_anonymous ?? false;
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isAnonymous, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
