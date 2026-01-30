@@ -4,8 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import Index from "./pages/Index";
-import AuthPage from "./pages/AuthPage";
 import ScanPage from "./pages/ScanPage";
 import HistoryPage from "./pages/HistoryPage";
 import InsightsPage from "./pages/InsightsPage";
@@ -24,13 +24,16 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (loading || profileLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <div className="text-center">
+          <div className="h-8 w-8 mx-auto animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="mt-4 text-sm text-muted-foreground">Loading your health data...</p>
+        </div>
       </div>
     );
   }
   
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/" replace />;
   }
   
   if (!profile?.is_onboarded) {
@@ -40,80 +43,60 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Auth route - redirects to home if already logged in
-function AuthRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  const { data: profile, isLoading: profileLoading } = useProfile();
-  
-  if (loading || profileLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
-  }
-  
-  if (user && profile?.is_onboarded) {
-    return <Navigate to="/scan" replace />;
-  }
-  
+// Component to initialize realtime sync
+function RealtimeSyncProvider({ children }: { children: React.ReactNode }) {
+  useRealtimeSync();
   return <>{children}</>;
 }
 
 function AppRoutes() {
   return (
-    <Routes>
-      <Route path="/" element={<Index />} />
-      <Route 
-        path="/auth" 
-        element={
-          <AuthRoute>
-            <AuthPage />
-          </AuthRoute>
-        } 
-      />
-      <Route
-        path="/scan"
-        element={
-          <ProtectedRoute>
-            <ScanPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/history"
-        element={
-          <ProtectedRoute>
-            <HistoryPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/insights"
-        element={
-          <ProtectedRoute>
-            <InsightsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/glucose"
-        element={
-          <ProtectedRoute>
-            <GlucosePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
-            <ProfilePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <RealtimeSyncProvider>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route
+          path="/scan"
+          element={
+            <ProtectedRoute>
+              <ScanPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/history"
+          element={
+            <ProtectedRoute>
+              <HistoryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/insights"
+          element={
+            <ProtectedRoute>
+              <InsightsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/glucose"
+          element={
+            <ProtectedRoute>
+              <GlucosePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </RealtimeSyncProvider>
   );
 }
 
