@@ -2,155 +2,161 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 
-/* BITESAFE Design System - Medical Grade UI */
+/* BITESAFE Design System - Modern Health UI */
 
 @layer base {
   :root {
-    /* Core brand colors */
-    --background: 210 20% 98%;
-    --foreground: 215 35% 15%;
+    /* Core brand colors - warmer, more inviting */
+    --background: 220 25% 97%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 35% 15%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 35% 15%;
+    --popover-foreground: 222 47% 11%;
 
-    /* Navy blue primary - trustworthy, medical */
-    --primary: 215 55% 25%;
+    /* Deep indigo primary - modern, trustworthy */
+    --primary: 235 65% 50%;
     --primary-foreground: 0 0% 100%;
+    --primary-glow: 235 80% 65%;
 
-    /* Light blue secondary */
-    --secondary: 210 60% 95%;
-    --secondary-foreground: 215 55% 25%;
+    /* Soft lavender secondary */
+    --secondary: 250 50% 96%;
+    --secondary-foreground: 235 55% 40%;
 
-    /* Muted surfaces */
-    --muted: 210 20% 96%;
-    --muted-foreground: 215 20% 45%;
+    /* Muted surfaces - warmer gray */
+    --muted: 220 20% 94%;
+    --muted-foreground: 220 15% 40%;
 
-    /* Accent - teal for actions */
-    --accent: 168 65% 40%;
+    /* Accent - vibrant teal */
+    --accent: 172 70% 42%;
     --accent-foreground: 0 0% 100%;
+    --accent-glow: 172 80% 55%;
 
     /* Risk levels */
-    --destructive: 4 75% 55%;
+    --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Success - green */
-    --success: 152 55% 40%;
+    /* Success - fresh green */
+    --success: 158 65% 42%;
     --success-foreground: 0 0% 100%;
+    --success-glow: 158 75% 55%;
 
-    /* Warning - coral/orange */
-    --warning: 15 85% 55%;
-    --warning-foreground: 0 0% 100%;
+    /* Warning - warm amber */
+    --warning: 32 95% 55%;
+    --warning-foreground: 32 95% 15%;
 
-    /* Risk high - coral red */
-    --risk-high: 4 85% 60%;
+    /* Risk high - coral */
+    --risk-high: 0 80% 62%;
     --risk-high-foreground: 0 0% 100%;
 
-    /* Risk medium - orange */
-    --risk-medium: 28 90% 55%;
-    --risk-medium-foreground: 0 0% 100%;
+    /* Risk medium - amber */
+    --risk-medium: 38 95% 55%;
+    --risk-medium-foreground: 38 95% 15%;
 
-    /* Risk low - teal green */
-    --risk-low: 160 55% 42%;
+    /* Risk low - emerald */
+    --risk-low: 158 65% 45%;
     --risk-low-foreground: 0 0% 100%;
 
-    /* Suggestion cards - light blue */
-    --suggestion: 210 70% 92%;
-    --suggestion-foreground: 215 55% 25%;
+    /* Suggestion cards - soft indigo */
+    --suggestion: 250 60% 96%;
+    --suggestion-foreground: 235 55% 35%;
 
-    --border: 214 20% 88%;
-    --input: 214 20% 88%;
-    --ring: 215 55% 25%;
+    --border: 220 20% 90%;
+    --input: 220 20% 92%;
+    --ring: 235 65% 50%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
     /* Sidebar */
-    --sidebar-background: 215 55% 20%;
-    --sidebar-foreground: 210 40% 98%;
+    --sidebar-background: 235 55% 18%;
+    --sidebar-foreground: 220 40% 98%;
     --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 215 55% 20%;
-    --sidebar-accent: 215 50% 30%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 45% 30%;
-    --sidebar-ring: 168 65% 50%;
+    --sidebar-primary-foreground: 235 55% 18%;
+    --sidebar-accent: 235 50% 28%;
+    --sidebar-accent-foreground: 220 40% 98%;
+    --sidebar-border: 235 45% 28%;
+    --sidebar-ring: 172 70% 50%;
 
-    /* Stats cards */
-    --stat-carbs: 210 70% 92%;
-    --stat-carbs-foreground: 215 55% 25%;
-    --stat-protein: 152 50% 90%;
-    --stat-protein-foreground: 152 55% 25%;
-    --stat-calories: 28 70% 92%;
-    --stat-calories-foreground: 28 60% 30%;
-    --stat-glucose: 280 50% 92%;
-    --stat-glucose-foreground: 280 50% 30%;
+    /* Stats cards - more vibrant */
+    --stat-carbs: 235 60% 95%;
+    --stat-carbs-foreground: 235 65% 40%;
+    --stat-protein: 158 55% 92%;
+    --stat-protein-foreground: 158 60% 28%;
+    --stat-calories: 32 80% 93%;
+    --stat-calories-foreground: 32 70% 30%;
+    --stat-glucose: 280 55% 93%;
+    --stat-glucose-foreground: 280 55% 35%;
   }
 
   .dark {
-    --background: 215 40% 8%;
-    --foreground: 210 40% 98%;
+    --background: 230 25% 7%;
+    --foreground: 220 40% 98%;
 
-    --card: 215 40% 12%;
-    --card-foreground: 210 40% 98%;
+    --card: 230 30% 11%;
+    --card-foreground: 220 40% 98%;
 
-    --popover: 215 40% 12%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 230 30% 11%;
+    --popover-foreground: 220 40% 98%;
 
-    --primary: 210 60% 55%;
-    --primary-foreground: 215 40% 8%;
+    --primary: 235 70% 62%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 235 85% 72%;
 
-    --secondary: 215 35% 18%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 230 30% 16%;
+    --secondary-foreground: 220 40% 98%;
 
-    --muted: 215 35% 18%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 230 25% 16%;
+    --muted-foreground: 220 20% 60%;
 
-    --accent: 168 55% 45%;
-    --accent-foreground: 215 40% 8%;
+    --accent: 172 65% 50%;
+    --accent-foreground: 230 25% 7%;
+    --accent-glow: 172 75% 60%;
 
-    --destructive: 4 70% 50%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 220 40% 98%;
 
-    --success: 152 50% 45%;
-    --success-foreground: 215 40% 8%;
+    --success: 158 60% 48%;
+    --success-foreground: 230 25% 7%;
+    --success-glow: 158 70% 60%;
 
-    --warning: 15 80% 50%;
-    --warning-foreground: 215 40% 8%;
+    --warning: 32 90% 55%;
+    --warning-foreground: 230 25% 7%;
 
-    --risk-high: 4 80% 55%;
+    --risk-high: 0 75% 58%;
     --risk-high-foreground: 0 0% 100%;
-    --risk-medium: 28 85% 50%;
-    --risk-medium-foreground: 0 0% 100%;
-    --risk-low: 160 50% 45%;
+    --risk-medium: 38 90% 55%;
+    --risk-medium-foreground: 38 90% 10%;
+    --risk-low: 158 60% 50%;
     --risk-low-foreground: 0 0% 100%;
 
-    --suggestion: 215 40% 20%;
-    --suggestion-foreground: 210 40% 98%;
+    --suggestion: 235 40% 18%;
+    --suggestion-foreground: 235 60% 85%;
 
-    --border: 215 35% 22%;
-    --input: 215 35% 22%;
-    --ring: 210 60% 55%;
+    --border: 230 25% 20%;
+    --input: 230 25% 18%;
+    --ring: 235 70% 62%;
 
-    --sidebar-background: 215 45% 10%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 210 60% 55%;
+    --sidebar-background: 235 45% 10%;
+    --sidebar-foreground: 220 40% 98%;
+    --sidebar-primary: 235 70% 62%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 40% 18%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 35% 22%;
-    --sidebar-ring: 168 55% 50%;
+    --sidebar-accent: 235 40% 18%;
+    --sidebar-accent-foreground: 220 40% 98%;
+    --sidebar-border: 235 35% 22%;
+    --sidebar-ring: 172 65% 50%;
 
-    --stat-carbs: 210 50% 20%;
-    --stat-carbs-foreground: 210 70% 80%;
-    --stat-protein: 152 40% 18%;
-    --stat-protein-foreground: 152 50% 75%;
-    --stat-calories: 28 50% 18%;
-    --stat-calories-foreground: 28 60% 75%;
-    --stat-glucose: 280 40% 18%;
-    --stat-glucose-foreground: 280 50% 75%;
+    --stat-carbs: 235 45% 18%;
+    --stat-carbs-foreground: 235 60% 80%;
+    --stat-protein: 158 40% 16%;
+    --stat-protein-foreground: 158 55% 70%;
+    --stat-calories: 32 50% 16%;
+    --stat-calories-foreground: 32 65% 70%;
+    --stat-glucose: 280 40% 16%;
+    --stat-glucose-foreground: 280 55% 75%;
   }
 }
 
@@ -160,40 +166,52 @@
   }
 
   html {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   body {
     @apply bg-background text-foreground;
+    background-image: 
+      radial-gradient(ellipse at 20% 0%, hsl(235 65% 50% / 0.03) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 100%, hsl(172 70% 42% / 0.03) 0%, transparent 50%);
+    min-height: 100vh;
   }
 }
 
 @layer utilities {
-  /* Gradient backgrounds */
+  /* Gradient backgrounds - vibrant and modern */
   .gradient-primary {
-    background: linear-gradient(135deg, hsl(215 55% 25%) 0%, hsl(215 60% 35%) 100%);
+    background: linear-gradient(135deg, hsl(235 65% 50%) 0%, hsl(250 70% 60%) 50%, hsl(280 65% 55%) 100%);
   }
 
   .gradient-success {
-    background: linear-gradient(135deg, hsl(152 55% 40%) 0%, hsl(160 50% 45%) 100%);
+    background: linear-gradient(135deg, hsl(158 65% 42%) 0%, hsl(172 70% 45%) 100%);
   }
 
   .gradient-warning {
-    background: linear-gradient(135deg, hsl(15 85% 55%) 0%, hsl(28 90% 55%) 100%);
+    background: linear-gradient(135deg, hsl(32 95% 55%) 0%, hsl(45 95% 55%) 100%);
   }
 
   .gradient-risk-high {
-    background: linear-gradient(135deg, hsl(4 85% 60%) 0%, hsl(15 80% 55%) 100%);
+    background: linear-gradient(135deg, hsl(0 80% 62%) 0%, hsl(15 85% 55%) 100%);
   }
 
   .gradient-risk-medium {
-    background: linear-gradient(135deg, hsl(28 90% 55%) 0%, hsl(35 85% 55%) 100%);
+    background: linear-gradient(135deg, hsl(38 95% 55%) 0%, hsl(45 90% 55%) 100%);
   }
 
   .gradient-risk-low {
-    background: linear-gradient(135deg, hsl(160 55% 42%) 0%, hsl(152 55% 40%) 100%);
+    background: linear-gradient(135deg, hsl(158 65% 45%) 0%, hsl(172 70% 48%) 100%);
+  }
+
+  .gradient-accent {
+    background: linear-gradient(135deg, hsl(172 70% 42%) 0%, hsl(185 70% 45%) 100%);
+  }
+
+  .gradient-hero {
+    background: linear-gradient(135deg, hsl(235 65% 50%) 0%, hsl(250 70% 55%) 40%, hsl(280 60% 50%) 100%);
   }
 
   /* Glass effect cards */
