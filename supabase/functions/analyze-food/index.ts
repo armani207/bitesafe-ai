@@ -32,11 +32,29 @@ serve(async (req) => {
   }
 
   try {
-    const { imageBase64, healthProfile } = await req.json() as FoodAnalysisRequest;
+    const { imageBase64, imageUrl, healthProfile } = await req.json() as FoodAnalysisRequest & { imageUrl?: string };
 
-    if (!imageBase64) {
+    // Support both base64 and URL inputs
+    let imageData = imageBase64;
+    if (!imageData && imageUrl) {
+      try {
+        const imageResponse = await fetch(imageUrl);
+        const imageBuffer = await imageResponse.arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+        const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+        imageData = `data:${contentType};base64,${base64}`;
+      } catch (fetchError) {
+        console.error('Failed to fetch image from URL:', fetchError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch image from URL' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    if (!imageData) {
       return new Response(
-        JSON.stringify({ error: 'Image data is required' }),
+        JSON.stringify({ error: 'Image data is required (imageBase64 or imageUrl)' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -149,7 +167,7 @@ Always provide at least 2-4 suggestions based on the risk level.`;
               {
                 type: 'image_url',
                 image_url: {
-                  url: imageBase64.startsWith('data:') ? imageBase64 : `data:image/jpeg;base64,${imageBase64}`
+                  url: imageData.startsWith('data:') ? imageData : `data:image/jpeg;base64,${imageData}`
                 }
               }
             ]
