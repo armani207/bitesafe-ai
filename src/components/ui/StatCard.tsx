@@ -39,7 +39,8 @@ export function StatCard({
   return (
     <div
       className={cn(
-        'rounded-xl transition-all card-hover',
+        'rounded-xl transition-all duration-200 ease-out card-hover card-enter',
+        'hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]',
         variantClasses[variant],
         sizeClasses[size],
         className

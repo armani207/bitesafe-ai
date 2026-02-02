@@ -33,12 +33,14 @@ export function SuggestionCard({ suggestion, onClick, className }: SuggestionCar
     <button
       onClick={onClick}
       className={cn(
-        'flex items-center gap-3 rounded-xl bg-suggestion px-4 py-3 text-left transition-all',
-        'hover:bg-suggestion/80 active:scale-[0.98]',
+        'flex items-center gap-3 rounded-xl bg-suggestion px-4 py-3 text-left',
+        'transition-all duration-200 ease-out card-enter',
+        'hover:bg-suggestion/80 hover:shadow-md hover:-translate-y-0.5',
+        'active:scale-[0.96] active:shadow-sm',
         className
       )}
     >
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary transition-transform duration-200 group-hover:scale-110">
         {icon}
       </div>
       <span className="text-sm font-medium text-suggestion-foreground">
