@@ -63,16 +63,198 @@ serve(async (req) => {
     const userId = claimsData.claims.sub;
     console.log('Authenticated user:', userId);
 
-    const { imageBase64, imageUrl, healthProfile } = await req.json() as FoodAnalysisRequest & { imageUrl?: string };
+    const requestBody = await req.json() as FoodAnalysisRequest & { imageUrl?: string };
+    const { imageBase64, imageUrl, healthProfile } = requestBody;
+
+    // ========== INPUT VALIDATION ==========
+    
+    // Validate image size limit (10MB max for base64)
+    const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+    if (imageBase64) {
+      // Calculate approximate size from base64 string
+      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+      const sizeInBytes = (base64Data.length * 3) / 4;
+      if (sizeInBytes > MAX_IMAGE_SIZE_BYTES) {
+        console.error('Image size exceeds limit:', sizeInBytes, 'bytes');
+        return new Response(
+          JSON.stringify({ error: 'Image size exceeds 10MB limit' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Validate base64 image format
+    if (imageBase64 && !imageBase64.match(/^data:image\/(jpeg|jpg|png|webp|gif);base64,/i)) {
+      console.error('Invalid image format');
+      return new Response(
+        JSON.stringify({ error: 'Invalid image format. Supported formats: JPEG, PNG, WebP, GIF' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate healthProfile structure if provided
+    if (healthProfile !== undefined && healthProfile !== null) {
+      if (typeof healthProfile !== 'object') {
+        return new Response(
+          JSON.stringify({ error: 'Invalid healthProfile: must be an object' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Validate required fields and types
+      const { diabetesType, usesInsulin, conditions, goals, allergies, dietaryRestrictions, age, weight, height, gender, activityLevel } = healthProfile;
+      
+      if (diabetesType !== undefined && typeof diabetesType !== 'string') {
+        return new Response(
+          JSON.stringify({ error: 'Invalid healthProfile: diabetesType must be a string' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      if (usesInsulin !== undefined && typeof usesInsulin !== 'boolean') {
+        return new Response(
+          JSON.stringify({ error: 'Invalid healthProfile: usesInsulin must be a boolean' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      if (conditions !== undefined && !Array.isArray(conditions)) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid healthProfile: conditions must be an array' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      if (goals !== undefined && !Array.isArray(goals)) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid healthProfile: goals must be an array' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      if (allergies !== undefined && !Array.isArray(allergies)) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid healthProfile: allergies must be an array' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      if (dietaryRestrictions !== undefined && !Array.isArray(dietaryRestrictions)) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid healthProfile: dietaryRestrictions must be an array' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Validate numeric fields with reasonable bounds
+      if (age !== undefined && (typeof age !== 'number' || age < 1 || age > 150)) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid healthProfile: age must be a number between 1 and 150' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      if (weight !== undefined && (typeof weight !== 'number' || weight < 1 || weight > 1000)) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid healthProfile: weight must be a number between 1 and 1000 kg' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      if (height !== undefined && (typeof height !== 'number' || height < 20 || height > 300)) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid healthProfile: height must be a number between 20 and 300 cm' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      if (gender !== undefined && typeof gender !== 'string') {
+        return new Response(
+          JSON.stringify({ error: 'Invalid healthProfile: gender must be a string' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      if (activityLevel !== undefined && typeof activityLevel !== 'string') {
+        return new Response(
+          JSON.stringify({ error: 'Invalid healthProfile: activityLevel must be a string' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Validate imageUrl if provided
+    if (imageUrl !== undefined && imageUrl !== null) {
+      if (typeof imageUrl !== 'string') {
+        return new Response(
+          JSON.stringify({ error: 'Invalid imageUrl: must be a string' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Validate URL format
+      try {
+        const url = new URL(imageUrl);
+        // Only allow http and https protocols
+        if (!['http:', 'https:'].includes(url.protocol)) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid imageUrl: only http and https protocols are allowed' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch {
+        return new Response(
+          JSON.stringify({ error: 'Invalid imageUrl: must be a valid URL' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // ========== END INPUT VALIDATION ==========
 
     // Support both base64 and URL inputs
     let imageData = imageBase64;
     if (!imageData && imageUrl) {
       try {
         const imageResponse = await fetch(imageUrl);
-        const imageBuffer = await imageResponse.arrayBuffer();
-        const base64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+        
+        // Validate response status
+        if (!imageResponse.ok) {
+          return new Response(
+            JSON.stringify({ error: 'Failed to fetch image from URL: server returned ' + imageResponse.status }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        // Validate content type from URL
         const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+        if (!contentType.startsWith('image/')) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid image URL: URL does not point to an image' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        // Validate size from URL
+        const contentLength = imageResponse.headers.get('content-length');
+        if (contentLength && parseInt(contentLength) > MAX_IMAGE_SIZE_BYTES) {
+          return new Response(
+            JSON.stringify({ error: 'Image from URL exceeds 10MB limit' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        const imageBuffer = await imageResponse.arrayBuffer();
+        
+        // Double-check size after download
+        if (imageBuffer.byteLength > MAX_IMAGE_SIZE_BYTES) {
+          return new Response(
+            JSON.stringify({ error: 'Image from URL exceeds 10MB limit' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
         imageData = `data:${contentType};base64,${base64}`;
       } catch (fetchError) {
         console.error('Failed to fetch image from URL:', fetchError);
