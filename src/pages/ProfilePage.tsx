@@ -30,7 +30,7 @@ export default function ProfilePage() {
     try {
       await signOut();
       toast.success('Logged out successfully');
-      navigate('/auth');
+      navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
       toast.error('Failed to log out');
