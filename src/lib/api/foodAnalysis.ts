@@ -22,15 +22,18 @@ interface AnalysisResponse {
 }
 
 export async function analyzeFoodImage(
-  imageBase64: string,
+  imageInput: { base64?: string; url?: string },
   healthProfile?: HealthProfile | null
 ): Promise<MealAnalysis> {
   try {
+    const body: Record<string, unknown> = {
+      healthProfile: healthProfile || undefined,
+    };
+    if (imageInput.base64) body.imageBase64 = imageInput.base64;
+    if (imageInput.url) body.imageUrl = imageInput.url;
+
     const { data, error } = await supabase.functions.invoke<AnalysisResponse>('analyze-food', {
-      body: { 
-        imageBase64,
-        healthProfile: healthProfile || undefined
-      },
+      body,
     });
 
     if (error) {
@@ -48,7 +51,7 @@ export async function analyzeFoodImage(
     const mealAnalysis: MealAnalysis = {
       id: crypto.randomUUID(),
       timestamp: new Date(),
-      imageUrl: imageBase64,
+      imageUrl: imageInput.url || imageInput.base64 || '',
       foods: analysis.foods.map(food => ({
         name: food.name,
         portion: food.portion,
@@ -84,10 +87,7 @@ export async function analyzeFoodImage(
 export function imageToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result);
-    };
+    reader.onload = () => resolve(reader.result as string);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });

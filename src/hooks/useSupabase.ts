@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { MealAnalysis, HealthProfile } from '@/types/health';
@@ -110,6 +110,8 @@ export function useUpdateProfile() {
   });
 }
 
+const MEALS_PAGE_SIZE = 50;
+
 // Meals hooks
 export function useMeals() {
   const { user } = useAuth();
@@ -123,11 +125,37 @@ export function useMeals() {
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(200);
 
       if (error) throw error;
       return data as DbMeal[];
     },
+    enabled: !!user,
+  });
+}
+
+export function useMealsInfinite() {
+  const { user } = useAuth();
+
+  return useInfiniteQuery({
+    queryKey: ['meals', 'infinite', user?.id],
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!user) return { data: [], hasMore: false };
+      const from = pageParam * MEALS_PAGE_SIZE;
+      const to = from + MEALS_PAGE_SIZE - 1;
+      const { data, error } = await supabase
+        .from('meals')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (error) throw error;
+      return { data: data as DbMeal[], hasMore: (data?.length ?? 0) === MEALS_PAGE_SIZE };
+    },
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.hasMore ? allPages.length : undefined,
+    initialPageParam: 0,
     enabled: !!user,
   });
 }
@@ -173,6 +201,8 @@ export function useAddMeal() {
   });
 }
 
+const GLUCOSE_PAGE_SIZE = 50;
+
 // Glucose readings hooks
 export function useGlucoseReadings() {
   const { user } = useAuth();
@@ -186,11 +216,37 @@ export function useGlucoseReadings() {
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(200);
 
       if (error) throw error;
       return data as DbGlucoseReading[];
     },
+    enabled: !!user,
+  });
+}
+
+export function useGlucoseReadingsInfinite() {
+  const { user } = useAuth();
+
+  return useInfiniteQuery({
+    queryKey: ['glucose_readings', 'infinite', user?.id],
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!user) return { data: [], hasMore: false };
+      const from = pageParam * GLUCOSE_PAGE_SIZE;
+      const to = from + GLUCOSE_PAGE_SIZE - 1;
+      const { data, error } = await supabase
+        .from('glucose_readings')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (error) throw error;
+      return { data: data as DbGlucoseReading[], hasMore: (data?.length ?? 0) === GLUCOSE_PAGE_SIZE };
+    },
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.hasMore ? allPages.length : undefined,
+    initialPageParam: 0,
     enabled: !!user,
   });
 }

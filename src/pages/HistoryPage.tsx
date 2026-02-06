@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useMeals, dbMealToMealAnalysis } from '@/hooks/useSupabase';
 import { RiskBadge } from '@/components/ui/RiskBadge';
@@ -7,6 +8,7 @@ import { Utensils, ChevronRight, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function HistoryPage() {
+  const navigate = useNavigate();
   const { data: dbMeals = [], isLoading } = useMeals();
   const meals = useMemo(() => dbMeals.map(dbMealToMealAnalysis), [dbMeals]);
 
@@ -119,17 +121,20 @@ export default function HistoryPage() {
                 </h3>
                 <div className="space-y-3">
                   {groupedMeals[dateKey].map((meal, mealIndex) => (
-                    <motion.div
+                    <motion.button
                       key={meal.id}
+                      type="button"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: groupIndex * 0.1 + mealIndex * 0.05 }}
-                      className="flex items-center gap-4 rounded-xl border border-border bg-card p-3 transition-all card-hover"
+                      onClick={() => navigate(`/history/${meal.id}`)}
+                      className="flex w-full items-center gap-4 rounded-xl border border-border bg-card p-3 text-left transition-all card-hover"
                     >
                       {meal.imageUrl ? (
                         <img
                           src={meal.imageUrl || '/placeholder.svg'}
                           alt="Meal"
+                          loading="lazy"
                           className="h-16 w-16 rounded-lg object-cover"
                         />
                       ) : (
@@ -161,7 +166,7 @@ export default function HistoryPage() {
                       </div>
                       
                       <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    </motion.div>
+                    </motion.button>
                   ))}
                 </div>
               </motion.div>

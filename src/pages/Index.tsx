@@ -5,19 +5,32 @@ import { useProfile } from '@/hooks/useSupabase';
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow';
 import { Activity } from 'lucide-react';
 
+const DEV_BYPASS_AUTH = import.meta.env.VITE_DEV_BYPASS_AUTH === 'true';
+
 const Index = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const { data: profile, isLoading: profileLoading } = useProfile();
 
   useEffect(() => {
+    if (DEV_BYPASS_AUTH) {
+      navigate('/scan');
+      return;
+    }
     if (!loading && !profileLoading) {
-      // If user is authenticated and onboarded, go to scan page
       if (user && profile?.is_onboarded) {
         navigate('/scan');
       }
     }
-  }, [user, profile, loading, profileLoading, navigate]);
+  }, [user, profile, loading, profileLoading, navigate, DEV_BYPASS_AUTH]);
+
+  if (DEV_BYPASS_AUTH) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   if (loading || profileLoading) {
     return (

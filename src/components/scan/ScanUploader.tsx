@@ -28,9 +28,11 @@ export function ScanUploader({ healthProfile, onFileSelect, onDemoScan }: ScanUp
       className="space-y-4"
     >
       {/* Camera/Upload area */}
-      <div
+      <button
+        type="button"
         onClick={() => fileInputRef.current?.click()}
-        className="flex aspect-[4/3] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-primary/30 bg-secondary/50 transition-colors hover:border-primary/50 hover:bg-secondary"
+        className="flex aspect-[4/3] w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-primary/30 bg-secondary/50 transition-colors hover:border-primary/50 hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+        aria-label="Capture or upload a meal photo for analysis"
       >
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
           <Camera className="h-8 w-8 text-primary" />
@@ -42,12 +44,12 @@ export function ScanUploader({ healthProfile, onFileSelect, onDemoScan }: ScanUp
         <p className="mt-2 text-xs text-muted-foreground">
           AI-powered nutritional analysis with personalized risk scoring
         </p>
-      </div>
+      </button>
 
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/gif"
         capture="environment"
         onChange={handleFileChange}
         className="hidden"

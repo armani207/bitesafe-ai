@@ -41,9 +41,9 @@ export function BottomNav() {
                 >
                   <motion.div
                     whileTap={{ scale: 0.95 }}
-                    className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary via-primary to-primary/80 shadow-xl shadow-primary/30 ring-4 ring-card"
+                    className="flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-medium ring-4 ring-card"
                   >
-                    <Icon className="h-7 w-7 text-white" />
+                    <Icon className="h-6 w-6 text-white" />
                   </motion.div>
                   <span className="mt-1 text-[10px] font-semibold text-primary">
                     {item.label}

@@ -41,6 +41,7 @@ export function ScanResults({ meal, onSave, onReset }: ScanResultsProps) {
           <img
             src={meal.imageUrl || '/placeholder.svg'}
             alt="Your meal"
+            loading="lazy"
             className="aspect-[4/3] w-full object-cover"
           />
         </div>

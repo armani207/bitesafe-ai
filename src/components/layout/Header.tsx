@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { useAppStore } from '@/store/appStore';
-import { Utensils, Sparkles } from 'lucide-react';
+import { Utensils } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface HeaderProps {
@@ -15,12 +15,6 @@ export function Header({ title, subtitle, showGreeting, children }: HeaderProps)
 
   return (
     <header className="gradient-hero relative overflow-hidden px-4 pb-8 pt-12 text-primary-foreground">
-      {/* Decorative background elements */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/5 blur-3xl" />
-        <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-accent/10 blur-2xl" />
-      </div>
-
       <div className="relative mx-auto max-w-lg">
         <div className="mb-5 flex items-center justify-between">
           <motion.div 
@@ -28,12 +22,11 @@ export function Header({ title, subtitle, showGreeting, children }: HeaderProps)
             animate={{ x: 0, opacity: 1 }}
             className="flex items-center gap-3"
           >
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 shadow-lg backdrop-blur-sm">
-              <Utensils className="h-6 w-6" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10">
+              <Utensils className="h-5 w-5" />
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-bold tracking-tight">BITESAFE</span>
-              <Sparkles className="h-4 w-4 text-accent" />
+            <div>
+              <span className="text-lg font-semibold tracking-tight">BiteSafe</span>
             </div>
           </motion.div>
           {userProfile?.avatar ? (
@@ -42,13 +35,13 @@ export function Header({ title, subtitle, showGreeting, children }: HeaderProps)
               animate={{ scale: 1, opacity: 1 }}
               src={userProfile.avatar}
               alt="Profile"
-              className="h-11 w-11 rounded-full border-2 border-white/30 object-cover shadow-lg ring-2 ring-white/10"
+              className="h-10 w-10 rounded-full border border-white/20 object-cover"
             />
           ) : (
             <motion.div 
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-sm font-semibold shadow-lg backdrop-blur-sm"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-sm font-medium"
             >
               {userProfile?.name?.charAt(0) || 'U'}
             </motion.div>
@@ -62,10 +55,10 @@ export function Header({ title, subtitle, showGreeting, children }: HeaderProps)
             transition={{ delay: 0.1 }}
             className="mb-2"
           >
-            <h1 className="text-2xl font-bold">
-              Welcome back, {userProfile.name.split(' ')[0]} 👋
+            <h1 className="text-xl font-semibold">
+              Welcome back, {userProfile.name.split(' ')[0]}
             </h1>
-            <p className="text-primary-foreground/80">Ready to analyze your next meal?</p>
+            <p className="text-sm text-primary-foreground/80">Ready to analyze your next meal?</p>
           </motion.div>
         )}
 
@@ -75,9 +68,9 @@ export function Header({ title, subtitle, showGreeting, children }: HeaderProps)
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.1 }}
           >
-            <h1 className="text-2xl font-bold">{title}</h1>
+            <h1 className="text-xl font-semibold">{title}</h1>
             {subtitle && (
-              <p className="mt-1 text-sm text-primary-foreground/80">{subtitle}</p>
+              <p className="mt-1 text-sm text-primary-foreground/75">{subtitle}</p>
             )}
           </motion.div>
         )}

@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Utensils, Shield, Zap, BarChart3, Sparkles } from 'lucide-react';
+import { Utensils, Shield, Zap, BarChart3 } from 'lucide-react';
 
 interface WelcomeStepProps {
   onNext: () => void;
@@ -8,89 +8,70 @@ interface WelcomeStepProps {
 
 export function WelcomeStep({ onNext }: WelcomeStepProps) {
   const features = [
-    { icon: Utensils, text: 'Scan any meal instantly', color: 'from-primary to-primary/70' },
-    { icon: Shield, text: 'Get personalized risk scores', color: 'from-destructive to-warning' },
-    { icon: Zap, text: 'Smart suggestions to stay safe', color: 'from-accent to-accent/70' },
-    { icon: BarChart3, text: 'Track your progress', color: 'from-success to-success/70' },
+    { icon: Utensils, text: 'Scan any meal instantly' },
+    { icon: Shield, text: 'Personalized risk scores' },
+    { icon: Zap, text: 'Actionable suggestions' },
+    { icon: BarChart3, text: 'Track your progress' },
   ];
 
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Hero section */}
       <div className="gradient-hero relative flex flex-1 flex-col items-center justify-center overflow-hidden px-6 py-12 text-primary-foreground">
-        {/* Decorative elements */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
-          <div className="absolute left-1/2 top-1/4 h-32 w-32 -translate-x-1/2 rounded-full bg-accent/10 blur-2xl" />
-        </div>
-
         <motion.div
-          initial={{ scale: 0.8, opacity: 0, rotate: -10 }}
-          animate={{ scale: 1, opacity: 1, rotate: 0 }}
-          transition={{ duration: 0.6, type: "spring" }}
-          className="relative mb-8"
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.4 }}
+          className="mb-8 flex h-20 w-20 items-center justify-center rounded-2xl bg-white/10"
         >
-          <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/20 shadow-2xl backdrop-blur-sm">
-            <Utensils className="h-12 w-12" />
-          </div>
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-accent text-white shadow-lg"
-          >
-            <Sparkles className="h-4 w-4" />
-          </motion.div>
+          <Utensils className="h-10 w-10" />
         </motion.div>
         
         <motion.h1
-          initial={{ y: 20, opacity: 0 }}
+          initial={{ y: 16, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.15 }}
-          className="mb-3 text-4xl font-bold tracking-tight"
+          transition={{ delay: 0.1 }}
+          className="mb-3 text-2xl font-semibold tracking-tight"
         >
-          BITESAFE
+          BiteSafe
         </motion.h1>
         
         <motion.p
-          initial={{ y: 20, opacity: 0 }}
+          initial={{ y: 16, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.25 }}
-          className="mb-10 max-w-xs text-center text-lg leading-relaxed text-primary-foreground/85"
+          transition={{ delay: 0.2 }}
+          className="mb-10 max-w-xs text-center text-sm leading-relaxed text-primary-foreground/80"
         >
-          Your personal food safety scanner for better blood sugar control
+          Food safety scanner for better blood sugar control
         </motion.p>
 
         <motion.div
-          initial={{ y: 20, opacity: 0 }}
+          initial={{ y: 16, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.35 }}
-          className="w-full max-w-sm space-y-3"
+          transition={{ delay: 0.3 }}
+          className="w-full max-w-sm space-y-2.5"
         >
           {features.map((feature, i) => (
             <motion.div
               key={i}
-              initial={{ x: -30, opacity: 0 }}
+              initial={{ x: -16, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.45 + i * 0.1, type: "spring", stiffness: 100 }}
-              className="group flex items-center gap-4 rounded-2xl bg-white/10 px-5 py-4 backdrop-blur-sm transition-all hover:bg-white/15"
+              transition={{ delay: 0.4 + i * 0.05 }}
+              className="flex items-center gap-3 rounded-xl bg-white/10 px-4 py-3"
             >
-              <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${feature.color} shadow-lg`}>
-                <feature.icon className="h-5 w-5 text-white" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15">
+                <feature.icon className="h-4 w-4" />
               </div>
-              <span className="font-medium text-white/95">{feature.text}</span>
+              <span className="text-sm font-medium text-white/90">{feature.text}</span>
             </motion.div>
           ))}
         </motion.div>
       </div>
 
-      {/* Bottom section */}
-      <div className="bg-card p-6 shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.1)]">
+      <div className="bg-card p-6">
         <Button
           onClick={onNext}
           size="lg"
-          className="w-full bg-gradient-to-r from-accent to-accent/80 py-6 text-base font-semibold text-white shadow-lg shadow-accent/30 transition-all hover:shadow-xl hover:shadow-accent/40"
+          className="w-full py-6 text-sm font-medium"
         >
           Get Started
         </Button>

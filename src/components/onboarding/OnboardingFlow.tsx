@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpdateProfile } from '@/hooks/useSupabase';
+import { uploadAvatar } from '@/lib/avatarStorage';
 import { WelcomeStep } from './steps/WelcomeStep';
 import { BasicInfoStep } from './steps/BasicInfoStep';
 import { ConditionsStep } from './steps/ConditionsStep';
@@ -41,7 +42,7 @@ export function OnboardingFlow() {
   const updateProfile = useUpdateProfile();
   
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
-  const [userData, setUserData] = useState<Partial<UserProfile>>({});
+  const [userData, setUserData] = useState<Partial<UserProfile> & { avatarFile?: File }>({});
   const [healthData, setHealthData] = useState<Partial<HealthProfile>>({
     conditions: [],
     goals: [],
@@ -69,14 +70,19 @@ export function OnboardingFlow() {
   const handleComplete = async () => {
     if (!user) {
       toast.error('Please sign in to continue');
-      navigate('/auth');
+      navigate('/');
       return;
     }
 
     try {
-      // Save all data to Supabase profile
+      let avatarUrl: string | null = null;
+      if (userData.avatarFile && user) {
+        avatarUrl = await uploadAvatar(user.id, userData.avatarFile);
+      }
+
       await updateProfile.mutateAsync({
         name: userData.name || 'User',
+        avatar_url: avatarUrl,
         diabetes_type: healthData.diabetesType || 'none',
         uses_insulin: healthData.usesInsulin || false,
         conditions: JSON.parse(JSON.stringify(healthData.conditions || [])),
@@ -140,7 +146,7 @@ export function OnboardingFlow() {
             <BasicInfoStep
               data={{ ...userData, ...healthData }}
               onUpdate={(data) => {
-                if ('name' in data || 'email' in data) {
+                if ('name' in data || 'email' in data || 'avatarFile' in data || 'avatar_url' in data) {
                   updateUserData(data as Partial<UserProfile>);
                 } else {
                   updateHealthData(data as Partial<HealthProfile>);

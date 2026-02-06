@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Camera } from 'lucide-react';
 import { HealthProfile, UserProfile } from '@/types/health';
 
 interface BasicInfoStepProps {
@@ -26,6 +26,20 @@ export function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicInfoStepP
   const [name, setName] = useState(data.name || '');
   const [diabetesType, setDiabetesType] = useState<DiabetesType>(data.diabetesType || 'none');
   const [usesInsulin, setUsesInsulin] = useState(data.usesInsulin || false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>((data as { avatar_url?: string }).avatar_url || null);
+  const avatarFileRef = useRef<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) return;
+    if (file.size > 2 * 1024 * 1024) return; // 2MB max
+    avatarFileRef.current = file;
+    setAvatarPreview(URL.createObjectURL(file));
+    onUpdate({ avatarFile: file } as unknown as Partial<UserProfile>);
+  };
 
   const handleContinue = () => {
     onUpdate({ name });
@@ -51,6 +65,29 @@ export function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicInfoStepP
         </p>
 
         <div className="space-y-6">
+          <div className="flex flex-col items-center">
+            <Label className="mb-2">Profile Picture</Label>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-primary/30 bg-secondary/50 transition-colors hover:border-primary/50 hover:bg-secondary"
+            >
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="Profile" className="h-full w-full object-cover" />
+              ) : (
+                <Camera className="h-10 w-10 text-muted-foreground" />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
+            <p className="mt-2 text-xs text-muted-foreground">JPG, PNG or WebP (max 2MB)</p>
+          </div>
+
           <div>
             <Label htmlFor="name">Your Name</Label>
             <Input

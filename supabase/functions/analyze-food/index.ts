@@ -1,10 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
+const ALLOWED_ORIGINS = Deno.env.get('CORS_ALLOWED_ORIGINS') || '*';
+const SCANS_PER_HOUR = 30;
+
+function getCorsHeaders(origin: string | null) {
+  const allowedOrigin = ALLOWED_ORIGINS === '*' ? '*' 
+    : origin && ALLOWED_ORIGINS.split(',').map(o => o.trim()).includes(origin) ? origin 
+    : ALLOWED_ORIGINS.split(',')[0]?.trim() || '*';
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  };
+}
 
 interface HealthProfile {
   diabetesType: string;
@@ -27,19 +35,20 @@ interface FoodAnalysisRequest {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+  const origin = req.headers.get('Origin');
+  const corsHeaders = getCorsHeaders(origin);
+  const jsonHeaders = { ...corsHeaders, 'Content-Type': 'application/json' };
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    // Validate JWT authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
-      console.error('Missing or invalid Authorization header');
       return new Response(
         JSON.stringify({ error: 'Unauthorized - missing authentication' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 401, headers: jsonHeaders }
       );
     }
 
@@ -50,18 +59,53 @@ serve(async (req) => {
     );
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
-    
-    if (claimsError || !claimsData?.claims) {
-      console.error('JWT validation failed:', claimsError);
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+
+    if (authError || !user) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized - invalid token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 401, headers: jsonHeaders }
       );
     }
 
-    const userId = claimsData.claims.sub;
-    console.log('Authenticated user:', userId);
+    const userId = user.id;
+
+    // Rate limiting: use api_rate_limits table (analysis requests, not saved meals)
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const endpoint = 'analyze-food';
+    if (serviceRoleKey) {
+      const adminClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        serviceRoleKey
+      );
+      const now = new Date();
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+      const { data: rateRow } = await adminClient
+        .from('api_rate_limits')
+        .select('request_count, window_start')
+        .eq('user_id', userId)
+        .eq('endpoint', endpoint)
+        .maybeSingle();
+
+      let count = 0;
+      let windowStart = now.toISOString();
+      if (rateRow && new Date(rateRow.window_start) > oneHourAgo) {
+        count = rateRow.request_count;
+        windowStart = rateRow.window_start;
+      }
+      if (count >= SCANS_PER_HOUR) {
+        return new Response(
+          JSON.stringify({ error: `Rate limit exceeded. Maximum ${SCANS_PER_HOUR} scans per hour. Please try again later.` }),
+          { status: 429, headers: jsonHeaders }
+        );
+      }
+      await adminClient.from('api_rate_limits').upsert({
+        user_id: userId,
+        endpoint,
+        request_count: count + 1,
+        window_start: count === 0 ? now.toISOString() : windowStart,
+      }, { onConflict: 'user_id,endpoint' });
+    }
 
     const requestBody = await req.json() as FoodAnalysisRequest & { imageUrl?: string };
     const { imageBase64, imageUrl, healthProfile } = requestBody;
