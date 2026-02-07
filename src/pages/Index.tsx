@@ -22,7 +22,7 @@ const Index = () => {
         navigate('/scan');
       }
     }
-  }, [user, profile, loading, profileLoading, navigate, DEV_BYPASS_AUTH]);
+  }, [user, profile, loading, profileLoading, navigate]);
 
   if (DEV_BYPASS_AUTH) {
     return (
