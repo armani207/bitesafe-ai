@@ -63,13 +63,22 @@ const Index = () => {
         <p className="mb-6 text-center text-sm text-muted-foreground">
           Your session could not be loaded. Please refresh the page to try again.
         </p>
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          Refresh page
-        </button>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            Refresh page
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/auth')}
+            className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-secondary"
+          >
+            Sign In
+          </button>
+        </div>
       </div>
     );
   }

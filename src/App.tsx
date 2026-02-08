@@ -11,6 +11,7 @@ import { useProfile } from "./hooks/useSupabase";
 
 // Lazy-load pages to reduce initial bundle and improve load time
 const Index = lazy(() => import("./pages/Index"));
+const AuthPage = lazy(() => import("./pages/AuthPage"));
 const ScanPage = lazy(() => import("./pages/ScanPage"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const MealDetailPage = lazy(() => import("./pages/MealDetailPage"));
@@ -83,6 +84,7 @@ function AppRoutes() {
       <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<AuthPage />} />
         <Route
           path="/scan"
           element={

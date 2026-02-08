@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useProfile, useMeals, useUpdateProfile, dbProfileToHealthProfile } from '@/hooks/useSupabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,12 +16,14 @@ import {
   LogOut,
   Settings,
   ShieldAlert,
-  Camera
+  Camera,
+  Chrome
 } from 'lucide-react';
 import { uploadAvatar, validateAvatarFile } from '@/lib/avatarStorage';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { useMemo } from 'react';
+import { lovable } from '@/integrations/lovable';
+import { Separator } from '@/components/ui/separator';
 
 export default function ProfilePage() {
   const { signOut, isAnonymous, linkAnonymousAccount, user } = useAuth();
@@ -31,6 +33,7 @@ export default function ProfilePage() {
   const [upgradeEmail, setUpgradeEmail] = useState('');
   const [upgradePassword, setUpgradePassword] = useState('');
   const [isUpgrading, setIsUpgrading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { data: dbProfile } = useProfile();
   const { data: dbMeals = [] } = useMeals();
   const navigate = useNavigate();
@@ -89,6 +92,22 @@ export default function ProfilePage() {
       toast.error(error instanceof Error ? error.message : 'Failed to upgrade account');
     } finally {
       setIsUpgrading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    try {
+      const { error } = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: window.location.origin,
+      });
+      if (error) {
+        toast.error(error.message || 'Failed to sign in with Google');
+      }
+    } catch (error) {
+      toast.error('Failed to sign in with Google');
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -309,15 +328,35 @@ export default function ProfilePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.45 }}
-            className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4"
+            className="mb-6 rounded-xl border border-primary/30 bg-primary/5 p-4"
           >
             <div className="mb-3 flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-amber-600" />
+              <ShieldAlert className="h-5 w-5 text-primary" />
               <h3 className="text-sm font-semibold">Save your data</h3>
             </div>
             <p className="mb-4 text-xs text-muted-foreground">
               Create an account to keep your meal history and insights across devices.
             </p>
+            
+            {/* Google Sign-In */}
+            <Button
+              type="button"
+              variant="outline"
+              className="mb-4 w-full"
+              onClick={handleGoogleSignIn}
+              disabled={isGoogleLoading}
+            >
+              <Chrome className="mr-2 h-4 w-4" />
+              {isGoogleLoading ? 'Signing in...' : 'Continue with Google'}
+            </Button>
+
+            <div className="relative mb-4">
+              <Separator />
+              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-primary/5 px-2 text-xs text-muted-foreground">
+                or
+              </span>
+            </div>
+
             <form onSubmit={handleUpgradeAccount} className="space-y-3">
               <div>
                 <Label htmlFor="upgrade-email" className="text-xs">Email</Label>
