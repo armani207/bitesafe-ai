@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,15 +7,17 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import Index from "./pages/Index";
-import ScanPage from "./pages/ScanPage";
-import HistoryPage from "./pages/HistoryPage";
-import MealDetailPage from "./pages/MealDetailPage";
-import InsightsPage from "./pages/InsightsPage";
-import ProfilePage from "./pages/ProfilePage";
-import GlucosePage from "./pages/GlucosePage";
-import NotFound from "./pages/NotFound";
 import { useProfile } from "./hooks/useSupabase";
+
+// Lazy-load pages to reduce initial bundle and improve load time
+const Index = lazy(() => import("./pages/Index"));
+const ScanPage = lazy(() => import("./pages/ScanPage"));
+const HistoryPage = lazy(() => import("./pages/HistoryPage"));
+const MealDetailPage = lazy(() => import("./pages/MealDetailPage"));
+const InsightsPage = lazy(() => import("./pages/InsightsPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const GlucosePage = lazy(() => import("./pages/GlucosePage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,9 +69,18 @@ function RealtimeSyncProvider({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function PageLoader() {
+  return (
+    <div className="flex min-h-[200px] items-center justify-center">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+    </div>
+  );
+}
+
 function AppRoutes() {
   return (
     <RealtimeSyncProvider>
+      <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/" element={<Index />} />
         <Route
@@ -121,6 +133,7 @@ function AppRoutes() {
         />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </Suspense>
     </RealtimeSyncProvider>
   );
 }

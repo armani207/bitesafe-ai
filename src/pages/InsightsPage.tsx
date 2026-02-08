@@ -1,13 +1,30 @@
-import { useMemo } from 'react';
+import { useMemo, lazy, Suspense } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useMeals, useGlucoseReadings, useProfile, dbMealToMealAnalysis, dbProfileToHealthProfile } from '@/hooks/useSupabase';
-import { WeeklyRiskChart, CarbsBreakdownChart } from '@/components/insights/WeeklyCharts';
 import { WeeklyStatsCard } from '@/components/insights/WeeklyStatsCard';
-import { PatternsAnalysis, PersonalizedRecommendations } from '@/components/insights/PatternsAnalysis';
-import { generateWeeklyReport, getWeekDateRange } from '@/lib/pdfExport';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { 
+import {
+  generateWeeklyReport,
+  getWeekDateRange,
+} from '@/lib/pdfExport';
+
+// Lazy-load chart components (recharts) to reduce initial Insights bundle
+const WeeklyRiskChart = lazy(() =>
+  import('@/components/insights/WeeklyCharts').then((m) => ({ default: m.WeeklyRiskChart }))
+);
+const CarbsBreakdownChart = lazy(() =>
+  import('@/components/insights/WeeklyCharts').then((m) => ({ default: m.CarbsBreakdownChart }))
+);
+const PatternsAnalysis = lazy(() =>
+  import('@/components/insights/PatternsAnalysis').then((m) => ({ default: m.PatternsAnalysis }))
+);
+const PersonalizedRecommendations = lazy(() =>
+  import('@/components/insights/PatternsAnalysis').then((m) => ({
+    default: m.PersonalizedRecommendations,
+  }))
+);
+import {
   TrendingUp, 
   Utensils, 
   BarChart3,
@@ -142,7 +159,9 @@ export default function InsightsPage() {
                   7-Day Risk Trend
                 </h3>
                 <div className="rounded-xl border border-border bg-card p-4">
-                  <WeeklyRiskChart meals={meals} />
+                  <Suspense fallback={<div className="h-[200px] animate-pulse rounded bg-muted" />}>
+                    <WeeklyRiskChart meals={meals} />
+                  </Suspense>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground text-center">
                   Lower scores indicate reduced likelihood of glucose spikes
@@ -158,7 +177,9 @@ export default function InsightsPage() {
                   Daily Carbohydrate Load (Color = Projected Risk)
                 </h3>
                 <div className="rounded-xl border border-border bg-card p-4">
-                  <CarbsBreakdownChart meals={meals} />
+                  <Suspense fallback={<div className="h-[200px] animate-pulse rounded bg-muted" />}>
+                    <CarbsBreakdownChart meals={meals} />
+                  </Suspense>
                 </div>
                 <div className="mt-2 flex items-center justify-center gap-4 text-xs text-muted-foreground">
                   <div className="flex items-center gap-1.5">
@@ -213,7 +234,9 @@ export default function InsightsPage() {
                 <p className="mb-4 text-sm text-muted-foreground">
                   Based on your meal data, these behavioral patterns are likely contributing to glucose variability:
                 </p>
-                <PatternsAnalysis meals={meals} healthProfile={healthProfile} />
+                <Suspense fallback={<div className="h-24 animate-pulse rounded bg-muted" />}>
+                  <PatternsAnalysis meals={meals} healthProfile={healthProfile} />
+                </Suspense>
               </motion.div>
             </TabsContent>
 
@@ -229,7 +252,9 @@ export default function InsightsPage() {
                 <p className="mb-4 text-sm text-muted-foreground">
                   Evidence-based recommendations to improve your metabolic outcomes:
                 </p>
-                <PersonalizedRecommendations meals={meals} healthProfile={healthProfile} />
+                <Suspense fallback={<div className="h-24 animate-pulse rounded bg-muted" />}>
+                  <PersonalizedRecommendations meals={meals} healthProfile={healthProfile} />
+                </Suspense>
               </motion.div>
 
               {/* Clinical Disclaimer */}

@@ -54,6 +54,26 @@ const Index = () => {
     return <OnboardingFlow />;
   }
 
+  // No user after loading - session lost or auth failed (e.g. from onboarding handleComplete)
+  // Show recovery UI instead of infinite spinner
+  if (!user) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6">
+        <h1 className="mb-2 text-xl font-semibold">Session unavailable</h1>
+        <p className="mb-6 text-center text-sm text-muted-foreground">
+          Your session could not be loaded. Please refresh the page to try again.
+        </p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          Refresh page
+        </button>
+      </div>
+    );
+  }
+
   // Fallback loading state while redirecting
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">

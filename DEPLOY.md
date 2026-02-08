@@ -1,11 +1,30 @@
 # BiteSafe Deployment Checklist
 
+## Step-by-Step Deployment
+
+1. **Push to GitHub** (from your terminal): `git push origin main`
+2. **Connect repo to Vercel**: vercel.com → Add New Project → Import `bitesafe-ai`
+3. **Add env vars in Vercel**: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` (do NOT add `VITE_DEV_BYPASS_AUTH`)
+4. **Deploy** – Vercel will build and deploy
+5. **Run Supabase migrations** (see below)
+6. **Configure Edge Function** – set `CORS_ALLOWED_ORIGINS` to your Vercel URL, plus `SUPABASE_SERVICE_ROLE_KEY` and `LOVABLE_API_KEY`
+
+---
+
 ## Pre-Deploy
 
-- [ ] Run migrations: `supabase db push` (or apply SQL files in Supabase Dashboard)
+- [ ] Run migrations (see Migrations section below)
 - [ ] Ensure `meal-images` and `avatars` storage buckets exist
 - [ ] Set environment variables for production build
 - [ ] **Do NOT set** `VITE_DEV_BYPASS_AUTH` in production (omit it or leave unset)
+
+## Migrations
+
+**Option A** – If project is linked: `supabase db push`
+
+**Option B** – Manual (Supabase Dashboard → SQL Editor): Run in order:
+1. `supabase/migrations/20260203000001_storage_and_rate_limit.sql`
+2. `supabase/migrations/20260203100000_avatars_bucket.sql`
 
 ## Environment Variables
 
@@ -38,6 +57,11 @@ npm run build
 ```
 
 Deploy the `dist/` folder to Vercel, Netlify, or your hosting provider.
+
+## Troubleshooting
+
+- **npm "devdir" warning** – If you see `Unknown env config "devdir"`, run `npm config delete devdir` or remove it from `~/.npmrc`. This is a local npm config and does not affect deployment.
+- **npm audit vulnerabilities** – Run `npm audit` to review. Fix with `npm audit fix`; some may require `npm audit fix --force` (breaking changes). The Vite/esbuild advisory is dev-server only and does not affect the production build.
 
 ## Post-Deploy
 
