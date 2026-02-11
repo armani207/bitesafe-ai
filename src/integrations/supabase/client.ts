@@ -5,6 +5,19 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+// Clear stale auth from other Supabase projects (e.g. after switching project IDs)
+if (typeof localStorage !== 'undefined' && SUPABASE_URL) {
+  const currentRef = SUPABASE_URL.replace('https://', '').split('.')[0];
+  const keysToRemove: string[] = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith('sb-') && key.includes('-auth-token') && !key.includes(currentRef)) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach((k) => localStorage.removeItem(k));
+}
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
