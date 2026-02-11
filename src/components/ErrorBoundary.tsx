@@ -4,7 +4,7 @@ import { AlertTriangle } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
-  fallback?: ReactNode;
+  fallback?: ReactNode | ((error: Error | undefined) => ReactNode);
 }
 
 interface State {
@@ -23,7 +23,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught:', error, errorInfo);
+    console.error('ErrorBoundary caught:', error?.message, error?.stack, errorInfo);
   }
 
   handleRetry = () => {
@@ -33,17 +33,25 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
-        return this.props.fallback;
+        const fb = this.props.fallback;
+        return typeof fb === 'function' ? fb(this.state.error) : fb;
       }
+      const err = this.state.error;
+      const msg = err?.message ?? 'Unknown error';
       return (
         <div className="flex min-h-[50vh] flex-col items-center justify-center px-6">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
             <AlertTriangle className="h-8 w-8 text-destructive" />
           </div>
           <h2 className="mt-4 text-lg font-semibold">Something went wrong</h2>
-          <p className="mt-2 max-w-sm text-center text-sm text-muted-foreground">
-            An unexpected error occurred. Please try again.
+          <p className="mt-2 max-w-md text-center text-sm text-muted-foreground">
+            {msg}
           </p>
+          {err?.stack && (
+            <pre className="mt-3 max-h-32 overflow-auto rounded bg-muted p-2 text-[10px] text-left">
+              {err.stack}
+            </pre>
+          )}
           <Button onClick={this.handleRetry} className="mt-6">
             Try again
           </Button>

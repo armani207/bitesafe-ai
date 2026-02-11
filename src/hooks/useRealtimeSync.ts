@@ -10,10 +10,15 @@ export function useRealtimeSync() {
 
   useEffect(() => {
     if (!user) return;
+    if (user.id.startsWith('demo-')) return;
 
-    // Subscribe to meals table changes
-    const mealsChannel = supabase
-      .channel('meals-sync')
+    let mealsChannel: ReturnType<typeof supabase.channel>;
+    let glucoseChannel: ReturnType<typeof supabase.channel>;
+
+    try {
+      // Subscribe to meals table changes
+      mealsChannel = supabase
+        .channel('meals-sync')
       .on(
         'postgres_changes',
         {
@@ -57,8 +62,8 @@ export function useRealtimeSync() {
       )
       .subscribe();
 
-    // Subscribe to glucose_readings table changes
-    const glucoseChannel = supabase
+      // Subscribe to glucose_readings table changes
+      glucoseChannel = supabase
       .channel('glucose-sync')
       .on(
         'postgres_changes',
@@ -102,10 +107,13 @@ export function useRealtimeSync() {
         }
       )
       .subscribe();
+    } catch {
+      return;
+    }
 
     return () => {
-      supabase.removeChannel(mealsChannel);
-      supabase.removeChannel(glucoseChannel);
+      if (mealsChannel) supabase.removeChannel(mealsChannel);
+      if (glucoseChannel) supabase.removeChannel(glucoseChannel);
     };
   }, [user, queryClient]);
 }

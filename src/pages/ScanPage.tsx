@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { slideTransition } from '@/lib/animations';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ScanUploader } from '@/components/scan/ScanUploader';
 import { ScanLoading } from '@/components/scan/ScanLoading';
@@ -66,11 +67,20 @@ export default function ScanPage() {
       toast.success('Meal analyzed successfully!');
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'AI analysis failed';
-      setAnalysisError(msg);
-      setPendingRetryBase64(imageBase64);
-      toast.error(msg);
-      if (msg.includes('Rate limit')) {
-        toast.info('Please wait an hour before scanning again.');
+      const isNetworkError = /fetch|network|Failed to fetch/i.test(msg);
+      if (isNetworkError && user?.id?.startsWith('demo-')) {
+        const demo = generateDemoAnalysis();
+        demo.imageUrl = imageUrl || imageBase64;
+        setCurrentMeal(demo);
+        setPendingRetryBase64(null);
+        toast.info('Offline mode: showing sample analysis');
+      } else {
+        setAnalysisError(msg);
+        setPendingRetryBase64(imageBase64);
+        toast.error(msg);
+        if (msg.includes('Rate limit')) {
+          toast.info('Please wait an hour before scanning again.');
+        }
       }
     } finally {
       setIsScanning(false);
@@ -94,11 +104,15 @@ export default function ScanPage() {
   };
 
   const handleSaveMeal = async () => {
-    if (!currentMeal || !user) return;
+    if (!currentMeal || !user || currentMeal.saved || addMeal.isPending) return;
     try {
       let imageUrlToSave = currentMeal.imageUrl;
       if (imageUrlToSave.startsWith('data:')) {
-        imageUrlToSave = await uploadMealImageFromBase64(user.id, imageUrlToSave);
+        if (user.id.startsWith('demo-')) {
+          imageUrlToSave = '/placeholder.svg';
+        } else {
+          imageUrlToSave = await uploadMealImageFromBase64(user.id, imageUrlToSave);
+        }
       }
 
       await addMeal.mutateAsync({
@@ -140,6 +154,7 @@ export default function ScanPage() {
   };
 
   const handleDemoScan = () => {
+    if (isScanning) return;
     setImagePreview('/placeholder.svg');
     setIsScanning(true);
     setAnalysisError(null);
@@ -152,33 +167,66 @@ export default function ScanPage() {
   return (
     <AppLayout headerProps={{ showGreeting: true }}>
       <div className="-mt-4 rounded-t-3xl bg-background px-4 pt-6">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" initial={false}>
           {!currentMeal && !isScanning && !analysisError && (
-            <ScanUploader
-              healthProfile={healthProfile}
-              onFileSelect={handleFileSelect}
-              onDemoScan={handleDemoScan}
-            />
+            <motion.div
+              key="uploader"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={slideTransition}
+            >
+              <ScanUploader
+                healthProfile={healthProfile}
+                onFileSelect={handleFileSelect}
+                onDemoScan={handleDemoScan}
+              />
+            </motion.div>
           )}
 
           {isScanning && (
-            <ScanLoading imagePreview={imagePreview} />
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ScanLoading imagePreview={imagePreview} />
+            </motion.div>
           )}
 
           {analysisError && !isScanning && (
-            <ScanErrorState
-              message={analysisError}
-              onRetry={handleRetry}
-              onReset={handleReset}
-            />
+            <motion.div
+              key="error"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={slideTransition}
+            >
+              <ScanErrorState
+                message={analysisError}
+                onRetry={handleRetry}
+                onReset={handleReset}
+              />
+            </motion.div>
           )}
 
           {currentMeal && !isScanning && (
-            <ScanResults
-              meal={currentMeal}
-              onSave={handleSaveMeal}
-              onReset={handleReset}
-            />
+            <motion.div
+              key="results"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={slideTransition}
+            >
+              <ScanResults
+                meal={currentMeal}
+                onSave={handleSaveMeal}
+                onReset={handleReset}
+                isSaving={addMeal.isPending}
+              />
+            </motion.div>
           )}
         </AnimatePresence>
       </div>

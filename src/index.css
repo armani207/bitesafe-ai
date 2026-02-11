@@ -287,17 +287,19 @@
     }
   }
 
-  /* Card hover - subtle, professional */
+  /* Card hover - subtle micro-animations */
   .card-hover {
-    @apply transition-all duration-150 ease-out;
+    @apply transition-all duration-200 ease-out;
+    transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
   .card-hover:hover {
     @apply shadow-soft;
+    transform: translateY(-1px);
   }
 
   .card-hover:active {
-    @apply scale-[0.99];
+    transform: translateY(0) scale(0.99);
   }
 
   /* Card entrance animation */
@@ -324,13 +326,28 @@
   .stagger-5 { animation-delay: 0.25s; }
   .stagger-6 { animation-delay: 0.3s; }
 
-  /* Button press animation */
+  /* Button press - micro feedback */
   .btn-press {
-    @apply transition-all duration-150 ease-out;
+    @apply transition-transform duration-150 ease-out;
+    transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
   .btn-press:active {
-    @apply scale-[0.96];
+    transform: scale(0.97);
+  }
+
+  /* Subtle hover lift for interactive elements */
+  .hover-lift {
+    @apply transition-transform duration-200 ease-out;
+    transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
+  }
+
+  .hover-lift:active {
+    transform: translateY(0);
   }
 
   /* Button hover - subtle */

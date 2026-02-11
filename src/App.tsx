@@ -15,9 +15,11 @@ const ScanPage = lazy(() => import("./pages/ScanPage"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const MealDetailPage = lazy(() => import("./pages/MealDetailPage"));
 const InsightsPage = lazy(() => import("./pages/InsightsPage"));
-const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const GlucosePage = lazy(() => import("./pages/GlucosePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+
+// ProfilePage loaded directly to avoid "Failed to fetch dynamically imported module" in dev
+import ProfilePage from "./pages/ProfilePage";
 
 const queryClient = new QueryClient({
   defaultOptions: {

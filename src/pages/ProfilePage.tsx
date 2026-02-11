@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useProfile, useMeals, useUpdateProfile, dbProfileToHealthProfile } from '@/hooks/useSupabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,30 +16,54 @@ import {
   LogOut,
   Settings,
   ShieldAlert,
-  Camera
+  Camera,
+  Trash2,
 } from 'lucide-react';
 import { uploadAvatar, validateAvatarFile } from '@/lib/avatarStorage';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { useMemo } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
-export default function ProfilePage() {
-  const { signOut, isAnonymous, linkAnonymousAccount, user } = useAuth();
+function ProfileContent() {
+  const { signOut, isAnonymous, linkAnonymousAccount, user, deleteAccount } = useAuth();
   const updateProfile = useUpdateProfile();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [upgradeEmail, setUpgradeEmail] = useState('');
   const [upgradePassword, setUpgradePassword] = useState('');
   const [isUpgrading, setIsUpgrading] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const { data: dbProfile } = useProfile();
   const { data: dbMeals = [] } = useMeals();
   const navigate = useNavigate();
 
-  const healthProfile = useMemo(() => dbProfileToHealthProfile(dbProfile ?? null), [dbProfile]);
+  const healthProfile = useMemo(() => {
+    try {
+      return dbProfileToHealthProfile(dbProfile ?? null);
+    } catch {
+      return null;
+    }
+  }, [dbProfile]);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user || !dbProfile) return;
+    if (user.id.startsWith('demo-')) {
+      toast.info('Avatar upload is not available in demo mode');
+      e.target.value = '';
+      return;
+    }
     const validation = validateAvatarFile(file);
     if (!validation.valid) {
       toast.error(validation.error);
@@ -69,6 +93,33 @@ export default function ProfilePage() {
     }
   };
 
+  const handleResetAccount = async () => {
+    setIsResetting(true);
+    try {
+      const { error } = await deleteAccount();
+      if (error) {
+        toast.error(error.message || 'Failed to reset');
+        return;
+      }
+      if (typeof localStorage !== 'undefined') {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k?.startsWith('sb-')) keysToRemove.push(k);
+        }
+        ['bitesafe-demo-profile', 'bitesafe-demo-meals', 'bitesafe-demo-glucose'].forEach((k) => keysToRemove.push(k));
+        keysToRemove.forEach((k) => localStorage.removeItem(k));
+      }
+      toast.success('Account reset. You can start fresh.');
+      navigate('/');
+      window.location.reload();
+    } catch (error) {
+      toast.error('Failed to reset account');
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   const handleUpgradeAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!upgradeEmail || !upgradePassword || upgradePassword.length < 6) {
@@ -92,7 +143,7 @@ export default function ProfilePage() {
     }
   };
 
-  const bmi = healthProfile 
+  const bmi = healthProfile && typeof healthProfile.height === 'number' && healthProfile.height > 0
     ? (healthProfile.weight / Math.pow(healthProfile.height / 100, 2)).toFixed(1)
     : null;
 
@@ -103,43 +154,37 @@ export default function ProfilePage() {
     return 'Obese';
   };
 
+  const conditions = Array.isArray(healthProfile?.conditions) ? healthProfile.conditions : [];
+  const goals = Array.isArray(healthProfile?.goals) ? healthProfile.goals : [];
+  const dietaryRestrictions = Array.isArray(healthProfile?.dietaryRestrictions) ? healthProfile.dietaryRestrictions : [];
+
   const profileSections = [
     {
       icon: Heart,
       title: 'Health Conditions',
-      value: healthProfile?.conditions.length 
-        ? healthProfile.conditions.map(c => c.name).join(', ')
-        : 'None specified',
+      value: conditions.length ? conditions.map((c) => (c && typeof c === 'object' && 'name' in c ? c.name : String(c))).join(', ') : 'None specified',
     },
     {
       icon: Target,
       title: 'Health Goals',
-      value: healthProfile?.goals.length
-        ? healthProfile.goals.map(g => g.name).join(', ')
-        : 'None specified',
+      value: goals.length ? goals.map((g) => (g && typeof g === 'object' && 'name' in g ? g.name : String(g))).join(', ') : 'None specified',
     },
     {
       icon: Utensils,
       title: 'Dietary Restrictions',
-      value: healthProfile?.dietaryRestrictions.length
-        ? healthProfile.dietaryRestrictions.join(', ')
-        : 'None',
+      value: dietaryRestrictions.length ? dietaryRestrictions.join(', ') : 'None',
     },
     {
       icon: Stethoscope,
       title: 'Healthcare Provider',
-      value: healthProfile?.healthcareProvider?.name || 'Not specified',
+      value: (healthProfile?.healthcareProvider && typeof healthProfile.healthcareProvider === 'object' && 'name' in healthProfile.healthcareProvider
+        ? (healthProfile.healthcareProvider as { name?: string }).name
+        : null) || 'Not specified',
     },
   ];
 
   return (
-    <AppLayout
-      headerProps={{
-        title: 'Profile',
-        subtitle: 'Manage your health profile',
-      }}
-    >
-      <div className="-mt-4 rounded-t-3xl bg-background px-4 pt-6">
+    <div className="-mt-4 rounded-t-3xl bg-background px-4 pt-6">
         {/* Profile Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -154,10 +199,11 @@ export default function ProfilePage() {
                 disabled={isUploadingAvatar}
                 className="relative flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-2xl font-bold text-primary ring-2 ring-background transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                {dbProfile?.avatar_url ? (
+                {typeof dbProfile?.avatar_url === 'string' && dbProfile.avatar_url ? (
                   <img src={dbProfile.avatar_url} alt="Profile" className="h-full w-full object-cover" />
                 ) : (
-                  dbProfile?.name?.charAt(0) || dbProfile?.email?.charAt(0) || 'U'
+                  (typeof dbProfile?.name === 'string' && dbProfile.name ? dbProfile.name.charAt(0) : null) ||
+                  (typeof dbProfile?.email === 'string' && dbProfile.email ? dbProfile.email.charAt(0) : null) || 'U'
                 )}
               </button>
               <Button
@@ -180,7 +226,7 @@ export default function ProfilePage() {
               className="hidden"
             />
             <div className="flex-1">
-              <h2 className="text-xl font-bold">{dbProfile?.name || 'User'}</h2>
+              <h2 className="text-xl font-bold">{typeof dbProfile?.name === 'string' ? dbProfile.name : 'User'}</h2>
               <p className="text-sm text-muted-foreground">
                 {healthProfile?.diabetesType !== 'none' 
                   ? `${healthProfile?.diabetesType === 'type1' ? 'Type 1' : 
@@ -280,7 +326,7 @@ export default function ProfilePage() {
         </motion.div>
 
         {/* Medications */}
-        {healthProfile?.medications && healthProfile.medications.length > 0 && (
+        {Array.isArray(healthProfile?.medications) && healthProfile.medications.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -309,10 +355,10 @@ export default function ProfilePage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.45 }}
-            className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4"
+            className="mb-6 rounded-xl border border-primary/30 bg-primary/5 p-4"
           >
             <div className="mb-3 flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-amber-600" />
+              <ShieldAlert className="h-5 w-5 text-primary" />
               <h3 className="text-sm font-semibold">Save your data</h3>
             </div>
             <p className="mb-4 text-xs text-muted-foreground">
@@ -373,8 +419,75 @@ export default function ProfilePage() {
             <LogOut className="mr-3 h-5 w-5" />
             Sign Out
           </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+                size="lg"
+                disabled={isResetting}
+              >
+                <Trash2 className="mr-3 h-5 w-5" />
+                Reset account / Delete login
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reset account?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will sign you out and clear all stored login data from this device. You can start fresh with a new anonymous session. Your data on our servers may still exist until you create a new account.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleResetAccount();
+                  }}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Reset account
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </motion.div>
-      </div>
+    </div>
+  );
+}
+
+const ProfileErrorFallback = ({ error }: { error?: Error }) => (
+  <div className="-mt-4 flex min-h-[40vh] flex-col items-center justify-center rounded-t-3xl bg-background px-6">
+    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+      <ShieldAlert className="h-8 w-8 text-destructive" />
+    </div>
+    <h2 className="mt-4 text-lg font-semibold">Profile error</h2>
+    <p className="mt-2 max-w-md text-center text-sm text-muted-foreground">
+      {error?.message ?? 'Could not load profile.'}
+    </p>
+    {error?.stack && (
+      <pre className="mt-3 max-h-24 overflow-auto rounded bg-muted p-2 text-[10px] text-left">
+        {error.stack}
+      </pre>
+    )}
+    <Button onClick={() => window.location.reload()} className="mt-6">
+      Try again
+    </Button>
+  </div>
+);
+
+export default function ProfilePage() {
+  return (
+    <AppLayout
+      headerProps={{
+        title: 'Profile',
+        subtitle: 'Manage your health profile',
+      }}
+    >
+      <ErrorBoundary fallback={(err) => <ProfileErrorFallback error={err} />}>
+        <ProfileContent />
+      </ErrorBoundary>
     </AppLayout>
   );
 }

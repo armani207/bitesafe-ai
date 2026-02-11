@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -65,24 +66,88 @@ interface DbGlucoseReading {
   created_at: string;
 }
 
+const DEMO_PROFILE_KEY = 'bitesafe-demo-profile';
+
+function isDemoUser(userId: string | undefined): boolean {
+  return !!userId?.startsWith('demo-');
+}
+
+function getDefaultDbProfile(userId: string): DbProfile {
+  const now = new Date().toISOString();
+  return {
+    id: userId,
+    user_id: userId,
+    name: null,
+    email: null,
+    avatar_url: null,
+    diabetes_type: null,
+    uses_insulin: false,
+    conditions: null,
+    goals: null,
+    allergies: null,
+    dietary_restrictions: null,
+    age: null,
+    weight: null,
+    height: null,
+    body_fat_percentage: null,
+    gender: null,
+    activity_level: null,
+    target_glucose_min: null,
+    target_glucose_max: null,
+    medications: null,
+    healthcare_provider: null,
+    is_onboarded: false,
+    created_at: now,
+    updated_at: now,
+  };
+}
+
+function getDemoProfile(userId: string): DbProfile {
+  const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(DEMO_PROFILE_KEY) : null;
+  let stored: Partial<DbProfile> | null = null;
+  if (raw) {
+    try {
+      stored = JSON.parse(raw) as Partial<DbProfile>;
+    } catch {
+      stored = null;
+    }
+  }
+  const base = getDefaultDbProfile(userId);
+  return { ...base, ...stored, user_id: userId } as DbProfile;
+}
+
 // Profile hooks
 export function useProfile() {
   const { user } = useAuth();
+
+  const demoInitialData = useMemo(() => {
+    if (user && isDemoUser(user.id)) return getDemoProfile(user.id);
+    return undefined;
+  }, [user?.id]);
 
   return useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
       if (!user) return null;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data as DbProfile | null;
+      if (isDemoUser(user.id)) return getDemoProfile(user.id);
+      try {
+        const timeout = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+        );
+        const result = await Promise.race([
+          supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle(),
+          timeout,
+        ]);
+        const { data, error } = result as { data: DbProfile | null; error: { message: string } | null };
+        if (error) throw new Error(error.message);
+        return data;
+      } catch (e) {
+        console.error('Profile fetch error:', e);
+        return getDefaultDbProfile(user.id);
+      }
     },
     enabled: !!user,
+    initialData: demoInitialData ?? undefined,
   });
 }
 
@@ -93,7 +158,23 @@ export function useUpdateProfile() {
   return useMutation({
     mutationFn: async (updates: Record<string, unknown>) => {
       if (!user) throw new Error('Not authenticated');
-      
+      if (isDemoUser(user.id)) {
+        const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(DEMO_PROFILE_KEY) : null;
+        let stored: Partial<DbProfile> | null = null;
+        if (raw) {
+          try {
+            stored = JSON.parse(raw) as Partial<DbProfile>;
+          } catch {
+            stored = null;
+          }
+        }
+        const base = getDefaultDbProfile(user.id);
+        const merged = { ...base, ...stored, ...updates, user_id: user.id } as DbProfile;
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(DEMO_PROFILE_KEY, JSON.stringify(merged));
+        }
+        return merged;
+      }
       const { data, error } = await supabase
         .from('profiles')
         .update(updates)
@@ -110,6 +191,8 @@ export function useUpdateProfile() {
   });
 }
 
+const DEMO_MEALS_KEY = 'bitesafe-demo-meals';
+
 const MEALS_PAGE_SIZE = 50;
 
 // Meals hooks
@@ -120,15 +203,33 @@ export function useMeals() {
     queryKey: ['meals', user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
-        .from('meals')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(200);
+      if (isDemoUser(user.id)) {
+        const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(DEMO_MEALS_KEY) : null;
+        let list: DbMeal[] = [];
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            list = Array.isArray(parsed) ? parsed : [];
+          } catch {
+            list = [];
+          }
+        }
+        return list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      }
+      try {
+        const { data, error } = await supabase
+          .from('meals')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(200);
 
-      if (error) throw error;
-      return data as DbMeal[];
+        if (error) throw error;
+        return (data ?? []) as DbMeal[];
+      } catch (e) {
+        console.error('Meals fetch error:', e);
+        return [];
+      }
     },
     enabled: !!user,
   });
@@ -141,6 +242,22 @@ export function useMealsInfinite() {
     queryKey: ['meals', 'infinite', user?.id],
     queryFn: async ({ pageParam = 0 }) => {
       if (!user) return { data: [], hasMore: false };
+      if (isDemoUser(user.id)) {
+        const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(DEMO_MEALS_KEY) : null;
+        let list: DbMeal[] = [];
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            list = Array.isArray(parsed) ? parsed : [];
+          } catch {
+            list = [];
+          }
+        }
+        const sorted = list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        const from = pageParam * MEALS_PAGE_SIZE;
+        const slice = sorted.slice(from, from + MEALS_PAGE_SIZE);
+        return { data: slice, hasMore: slice.length === MEALS_PAGE_SIZE };
+      }
       const from = pageParam * MEALS_PAGE_SIZE;
       const to = from + MEALS_PAGE_SIZE - 1;
       const { data, error } = await supabase
@@ -184,7 +301,32 @@ export function useAddMeal() {
         risk_explanation: meal.riskExplanation,
         suggestions: JSON.parse(JSON.stringify(meal.suggestions)) as Json,
         tips: meal.tips,
+        saved: false,
       };
+
+      if (isDemoUser(user.id)) {
+        const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(DEMO_MEALS_KEY) : null;
+        let list: DbMeal[] = [];
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            list = Array.isArray(parsed) ? parsed : [];
+          } catch {
+            list = [];
+          }
+        }
+        const now = new Date().toISOString();
+        const newMeal: DbMeal = {
+          id: 'demo-meal-' + crypto.randomUUID(),
+          ...mealData,
+          created_at: now,
+        } as DbMeal;
+        list.unshift(newMeal);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(DEMO_MEALS_KEY, JSON.stringify(list));
+        }
+        return newMeal;
+      }
 
       const { data, error } = await supabase
         .from('meals')
@@ -201,6 +343,8 @@ export function useAddMeal() {
   });
 }
 
+const DEMO_GLUCOSE_KEY = 'bitesafe-demo-glucose';
+
 const GLUCOSE_PAGE_SIZE = 50;
 
 // Glucose readings hooks
@@ -211,6 +355,19 @@ export function useGlucoseReadings() {
     queryKey: ['glucose_readings', user?.id],
     queryFn: async () => {
       if (!user) return [];
+      if (isDemoUser(user.id)) {
+        const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(DEMO_GLUCOSE_KEY) : null;
+        let list: DbGlucoseReading[] = [];
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            list = Array.isArray(parsed) ? parsed : [];
+          } catch {
+            list = [];
+          }
+        }
+        return list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      }
       const { data, error } = await supabase
         .from('glucose_readings')
         .select('*')
@@ -232,6 +389,22 @@ export function useGlucoseReadingsInfinite() {
     queryKey: ['glucose_readings', 'infinite', user?.id],
     queryFn: async ({ pageParam = 0 }) => {
       if (!user) return { data: [], hasMore: false };
+      if (isDemoUser(user.id)) {
+        const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(DEMO_GLUCOSE_KEY) : null;
+        let list: DbGlucoseReading[] = [];
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            list = Array.isArray(parsed) ? parsed : [];
+          } catch {
+            list = [];
+          }
+        }
+        const sorted = list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        const from = pageParam * GLUCOSE_PAGE_SIZE;
+        const slice = sorted.slice(from, from + GLUCOSE_PAGE_SIZE);
+        return { data: slice, hasMore: slice.length === GLUCOSE_PAGE_SIZE };
+      }
       const from = pageParam * GLUCOSE_PAGE_SIZE;
       const to = from + GLUCOSE_PAGE_SIZE - 1;
       const { data, error } = await supabase
@@ -264,6 +437,36 @@ export function useAddGlucoseReading() {
     }) => {
       if (!user) throw new Error('Not authenticated');
 
+      if (isDemoUser(user.id)) {
+        const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(DEMO_GLUCOSE_KEY) : null;
+        let list: DbGlucoseReading[] = [];
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            list = Array.isArray(parsed) ? parsed : [];
+          } catch {
+            list = [];
+          }
+        }
+        const now = new Date().toISOString();
+        const newReading: DbGlucoseReading = {
+          id: 'demo-glucose-' + crypto.randomUUID(),
+          user_id: user.id,
+          value: reading.value,
+          unit: 'mg/dL',
+          source: 'manual',
+          meal_id: reading.meal_id ?? null,
+          reading_type: reading.reading_type ?? null,
+          notes: reading.notes ?? null,
+          created_at: now,
+        };
+        list.unshift(newReading);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(DEMO_GLUCOSE_KEY, JSON.stringify(list));
+        }
+        return newReading;
+      }
+
       const { data, error } = await supabase
         .from('glucose_readings')
         .insert([{
@@ -289,13 +492,16 @@ export function useAddGlucoseReading() {
 export function dbProfileToHealthProfile(dbProfile: DbProfile | null): HealthProfile | null {
   if (!dbProfile) return null;
 
+  const rawConditions = dbProfile.conditions as HealthProfile['conditions'] | unknown;
+  const rawGoals = dbProfile.goals as HealthProfile['goals'] | unknown;
+
   return {
     diabetesType: (dbProfile.diabetes_type as HealthProfile['diabetesType']) || 'none',
-    usesInsulin: dbProfile.uses_insulin,
-    conditions: (dbProfile.conditions as HealthProfile['conditions']) || [],
-    goals: (dbProfile.goals as HealthProfile['goals']) || [],
-    allergies: dbProfile.allergies || [],
-    dietaryRestrictions: dbProfile.dietary_restrictions || [],
+    usesInsulin: dbProfile.uses_insulin ?? false,
+    conditions: Array.isArray(rawConditions) ? rawConditions : [],
+    goals: Array.isArray(rawGoals) ? rawGoals : [],
+    allergies: Array.isArray(dbProfile.allergies) ? dbProfile.allergies : [],
+    dietaryRestrictions: Array.isArray(dbProfile.dietary_restrictions) ? dbProfile.dietary_restrictions : [],
     age: dbProfile.age || 30,
     weight: dbProfile.weight || 70,
     height: dbProfile.height || 170,
@@ -304,7 +510,7 @@ export function dbProfileToHealthProfile(dbProfile: DbProfile | null): HealthPro
     activityLevel: (dbProfile.activity_level as HealthProfile['activityLevel']) || 'moderate',
     targetGlucoseMin: dbProfile.target_glucose_min || undefined,
     targetGlucoseMax: dbProfile.target_glucose_max || undefined,
-    medications: dbProfile.medications || undefined,
+    medications: Array.isArray(dbProfile.medications) ? dbProfile.medications : undefined,
     healthcareProvider: dbProfile.healthcare_provider as HealthProfile['healthcareProvider'],
   };
 }

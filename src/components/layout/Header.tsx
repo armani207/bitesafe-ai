@@ -29,7 +29,7 @@ export function Header({ title, subtitle, showGreeting, children }: HeaderProps)
               <span className="text-lg font-semibold tracking-tight">BiteSafe</span>
             </div>
           </motion.div>
-          {userProfile?.avatar ? (
+          {typeof userProfile?.avatar === 'string' && userProfile.avatar ? (
             <motion.img
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -43,7 +43,7 @@ export function Header({ title, subtitle, showGreeting, children }: HeaderProps)
               animate={{ scale: 1, opacity: 1 }}
               className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-sm font-medium"
             >
-              {userProfile?.name?.charAt(0) || 'U'}
+              {typeof userProfile?.name === 'string' ? userProfile.name.charAt(0).toUpperCase() : 'U'}
             </motion.div>
           )}
         </div>
@@ -56,7 +56,7 @@ export function Header({ title, subtitle, showGreeting, children }: HeaderProps)
             className="mb-2"
           >
             <h1 className="text-xl font-semibold">
-              Welcome back, {userProfile.name.split(' ')[0]}
+              Welcome back, {typeof userProfile.name === 'string' ? userProfile.name.split(' ')[0] : 'User'}
             </h1>
             <p className="text-sm text-primary-foreground/80">Ready to analyze your next meal?</p>
           </motion.div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { slideTransition, springGentle } from '@/lib/animations';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpdateProfile } from '@/hooks/useSupabase';
@@ -42,6 +43,7 @@ export function OnboardingFlow() {
   const updateProfile = useUpdateProfile();
   
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
+  const [isCompleting, setIsCompleting] = useState(false);
   const [userData, setUserData] = useState<Partial<UserProfile> & { avatarFile?: File }>({});
   const [healthData, setHealthData] = useState<Partial<HealthProfile>>({
     conditions: [],
@@ -68,12 +70,11 @@ export function OnboardingFlow() {
   };
 
   const handleComplete = async () => {
-    if (!user) {
-      toast.error('Please sign in to continue');
-      navigate('/');
+    if (isCompleting || !user) {
+      if (!user) toast.error('Please sign in to continue');
       return;
     }
-
+    setIsCompleting(true);
     try {
       let avatarUrl: string | null = null;
       if (userData.avatarFile && user) {
@@ -105,6 +106,8 @@ export function OnboardingFlow() {
     } catch (error) {
       console.error('Failed to save profile:', error);
       toast.error('Failed to save profile. Please try again.');
+    } finally {
+      setIsCompleting(false);
     }
   };
 
@@ -125,18 +128,18 @@ export function OnboardingFlow() {
             className="h-full bg-primary"
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
           />
         </div>
       )}
 
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={currentStep}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.3 }}
+          initial={{ opacity: 0, x: 12, filter: 'blur(4px)' }}
+          animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+          exit={{ opacity: 0, x: -12, filter: 'blur(4px)' }}
+          transition={slideTransition}
           className="flex-1"
         >
           {currentStep === 'welcome' && (
@@ -197,7 +200,7 @@ export function OnboardingFlow() {
             />
           )}
           {currentStep === 'complete' && (
-            <CompleteStep onComplete={handleComplete} />
+            <CompleteStep onComplete={handleComplete} isLoading={isCompleting} />
           )}
         </motion.div>
       </AnimatePresence>
