@@ -67,8 +67,9 @@ export default function HistoryPage() {
           </div>
         ) : meals.length === 0 ? (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="flex flex-col items-center py-16 text-center"
           >
             <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-secondary">
@@ -83,8 +84,9 @@ export default function HistoryPage() {
           <div className="space-y-6">
             {/* Week Summary Card */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
               className="rounded-xl border border-border bg-card p-4"
             >
               <div className="flex items-center gap-2 mb-3">
@@ -112,9 +114,9 @@ export default function HistoryPage() {
             {dateKeys.map((dateKey, groupIndex) => (
               <motion.div
                 key={dateKey}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: groupIndex * 0.1 }}
+                transition={{ delay: groupIndex * 0.06, duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
                 <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
                   {dateKey}
@@ -124,9 +126,9 @@ export default function HistoryPage() {
                     <motion.button
                       key={meal.id}
                       type="button"
-                      initial={{ opacity: 0, x: -20 }}
+                      initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: groupIndex * 0.1 + mealIndex * 0.05 }}
+                      transition={{ delay: groupIndex * 0.06 + mealIndex * 0.04, duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
                       onClick={() => navigate(`/history/${meal.id}`)}
                       className="flex w-full items-center gap-4 rounded-xl border border-border bg-card p-3 text-left transition-all card-hover"
                     >

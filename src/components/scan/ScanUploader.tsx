@@ -21,12 +21,7 @@ export function ScanUploader({ healthProfile, onFileSelect, onDemoScan }: ScanUp
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="space-y-4"
-    >
+    <div className="space-y-4">
       {/* Camera/Upload area */}
       <button
         type="button"
@@ -57,6 +52,7 @@ export function ScanUploader({ healthProfile, onFileSelect, onDemoScan }: ScanUp
 
       <div className="flex gap-3">
         <Button
+          type="button"
           onClick={() => fileInputRef.current?.click()}
           className="flex-1"
           size="lg"
@@ -65,6 +61,7 @@ export function ScanUploader({ healthProfile, onFileSelect, onDemoScan }: ScanUp
           Analyze Meal
         </Button>
         <Button
+          type="button"
           onClick={onDemoScan}
           variant="outline"
           className="flex-1"
@@ -112,6 +109,6 @@ export function ScanUploader({ healthProfile, onFileSelect, onDemoScan }: ScanUp
           Consult your healthcare provider for treatment decisions.
         </p>
       </div>
-    </motion.div>
+    </div>
   );
 }

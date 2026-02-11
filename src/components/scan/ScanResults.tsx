@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { RiskBadge, RiskAlert } from '@/components/ui/RiskBadge';
 import { SuggestionGrid, TipCard } from '@/components/ui/SuggestionCard';
@@ -11,9 +10,10 @@ interface ScanResultsProps {
   meal: MealAnalysis;
   onSave: () => void;
   onReset: () => void;
+  isSaving?: boolean;
 }
 
-export function ScanResults({ meal, onSave, onReset }: ScanResultsProps) {
+export function ScanResults({ meal, onSave, onReset, isSaving }: ScanResultsProps) {
   // Determine predictive framing
   const riskFraming = meal.riskLevel === 'high' 
     ? 'This meal is likely to cause significant glucose elevation'
@@ -28,11 +28,7 @@ export function ScanResults({ meal, onSave, onReset }: ScanResultsProps) {
     : 'Glucose likely to remain stable';
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
+    <div
       className="space-y-4"
     >
       {/* Meal image */}
@@ -161,17 +157,19 @@ export function ScanResults({ meal, onSave, onReset }: ScanResultsProps) {
       {/* Action buttons */}
       <div className="flex gap-3 pb-4">
         <Button
+          type="button"
           onClick={onSave}
           className="flex-1 bg-success text-success-foreground hover:bg-success/90"
           size="lg"
+          disabled={isSaving || meal.saved}
         >
           <Save className="mr-2 h-5 w-5" />
-          Log This Meal
+          {isSaving ? 'Saving...' : meal.saved ? 'Saved' : 'Log This Meal'}
         </Button>
-        <Button onClick={onReset} variant="outline" size="lg">
+        <Button type="button" onClick={onReset} variant="outline" size="lg" disabled={isSaving}>
           <RefreshCw className="h-5 w-5" />
         </Button>
       </div>
-    </motion.div>
+    </div>
   );
 }

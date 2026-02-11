@@ -11,14 +11,15 @@ import { useProfile } from "./hooks/useSupabase";
 
 // Lazy-load pages to reduce initial bundle and improve load time
 const Index = lazy(() => import("./pages/Index"));
-const AuthPage = lazy(() => import("./pages/AuthPage"));
 const ScanPage = lazy(() => import("./pages/ScanPage"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const MealDetailPage = lazy(() => import("./pages/MealDetailPage"));
 const InsightsPage = lazy(() => import("./pages/InsightsPage"));
-const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const GlucosePage = lazy(() => import("./pages/GlucosePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+
+// ProfilePage loaded directly to avoid "Failed to fetch dynamically imported module" in dev
+import ProfilePage from "./pages/ProfilePage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -84,7 +85,6 @@ function AppRoutes() {
       <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/" element={<Index />} />
-        <Route path="/auth" element={<AuthPage />} />
         <Route
           path="/scan"
           element={
