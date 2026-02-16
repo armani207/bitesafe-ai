@@ -10,41 +10,12 @@ import { useAddMeal, useProfile, dbProfileToHealthProfile } from '@/hooks/useSup
 import { MealAnalysis } from '@/types/health';
 import { analyzeFoodImage } from '@/lib/api/foodAnalysis';
 import { uploadMealImageFromBase64 } from '@/lib/mealImageStorage';
-import { validateImageFile, compressImage } from '@/lib/imageUtils';
+import { validateImageFile, prepareImageForAnalysis, shrinkBase64Image } from '@/lib/imageUtils';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
-// Demo meal analysis - only used for explicit "Demo Analysis" button
-function generateDemoAnalysis(): MealAnalysis {
-  return {
-    id: crypto.randomUUID(),
-    timestamp: new Date(),
-    imageUrl: '/placeholder.svg',
-    foods: [
-      { name: 'Chicken', portion: '150g', carbsGrams: 0, proteinGrams: 35, fatGrams: 8, fiberGrams: 0, caloriesKcal: 220, sugarGrams: 0 },
-      { name: 'Rice', portion: '1 cup', carbsGrams: 45, proteinGrams: 4, fatGrams: 0, fiberGrams: 1, caloriesKcal: 200, sugarGrams: 0 },
-      { name: 'French Fries', portion: 'medium', carbsGrams: 35, proteinGrams: 4, fatGrams: 17, fiberGrams: 3, caloriesKcal: 320, sugarGrams: 0 },
-    ],
-    totalCarbs: { min: 60, max: 75 },
-    totalProtein: 43,
-    totalFat: 25,
-    totalCalories: 740,
-    totalFiber: 4,
-    totalSugar: 2,
-    riskLevel: 'medium',
-    riskScore: 50,
-    riskExplanation: 'May cause moderate glucose increase',
-    suggestions: [
-      { id: '1', icon: '🍽️', text: 'Halve the Portion', type: 'portion' },
-      { id: '2', icon: '🥦', text: 'Add Veggies', type: 'add' },
-    ],
-    tips: ['Try adding some lean protein', 'Opt for more fiber-rich foods'],
-    saved: false,
-  };
-}
-
 export default function ScanPage() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { data: dbProfile } = useProfile();
   const healthProfile = dbProfileToHealthProfile(dbProfile ?? null);
   const addMeal = useAddMeal();
@@ -60,28 +31,17 @@ export default function ScanPage() {
     setAnalysisError(null);
     try {
       const input = imageUrl ? { url: imageUrl } : { base64: imageBase64 };
-      const analysis = await analyzeFoodImage(input, healthProfile);
+      const accessToken = session?.access_token ?? null;
+      const analysis = await analyzeFoodImage(input, healthProfile, accessToken);
       analysis.imageUrl = imageUrl || imageBase64;
       setCurrentMeal(analysis);
       setPendingRetryBase64(null);
       toast.success('Meal analyzed successfully!');
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'AI analysis failed';
-      const isNetworkError = /fetch|network|Failed to fetch/i.test(msg);
-      if (isNetworkError && user?.id?.startsWith('demo-')) {
-        const demo = generateDemoAnalysis();
-        demo.imageUrl = imageUrl || imageBase64;
-        setCurrentMeal(demo);
-        setPendingRetryBase64(null);
-        toast.info('Offline mode: showing sample analysis');
-      } else {
-        setAnalysisError(msg);
-        setPendingRetryBase64(imageBase64);
-        toast.error(msg);
-        if (msg.includes('Rate limit')) {
-          toast.info('Please wait an hour before scanning again.');
-        }
-      }
+      setAnalysisError(msg);
+      setPendingRetryBase64(imageBase64);
+      toast.error('Analysis failed — see details below');
     } finally {
       setIsScanning(false);
     }
@@ -93,25 +53,41 @@ export default function ScanPage() {
       toast.error(validation.error);
       return;
     }
+
+    const isHeicFile = /\.(heic|heif)$/i.test(file.name) || 
+      ['image/heic', 'image/heif'].includes(file.type);
+
     try {
-      const compressed = await compressImage(file);
+      if (isHeicFile) {
+        // Show loading immediately for HEIC — conversion can take a few seconds
+        setIsScanning(true);
+        setAnalysisError(null);
+        toast.info('Converting iPhone photo...');
+      }
+      const compressed = await prepareImageForAnalysis(file);
       setImagePreview(compressed);
+      if (isHeicFile) setIsScanning(false); // Reset before analyzeWithAI sets it again
       await analyzeWithAI(compressed);
     } catch (error) {
+      setIsScanning(false);
       console.error('Error processing image:', error);
-      toast.error('Failed to process image');
+      const msg = error instanceof Error ? error.message : 'Failed to process image';
+      setAnalysisError(msg);
+      toast.error(msg);
     }
   };
 
   const handleSaveMeal = async () => {
     if (!currentMeal || !user || currentMeal.saved || addMeal.isPending) return;
     try {
+      // Try to upload image to storage; if it fails (e.g. bucket missing), save without image
       let imageUrlToSave = currentMeal.imageUrl;
       if (imageUrlToSave.startsWith('data:')) {
-        if (user.id.startsWith('demo-')) {
-          imageUrlToSave = '/placeholder.svg';
-        } else {
+        try {
           imageUrlToSave = await uploadMealImageFromBase64(user.id, imageUrlToSave);
+        } catch (imgErr) {
+          console.warn('Image upload failed, saving meal without image:', imgErr);
+          imageUrlToSave = ''; // Save without image — meal data is what matters
         }
       }
 
@@ -153,15 +129,16 @@ export default function ScanPage() {
     }
   };
 
-  const handleDemoScan = () => {
-    if (isScanning) return;
-    setImagePreview('/placeholder.svg');
-    setIsScanning(true);
-    setAnalysisError(null);
-    setTimeout(() => {
-      setCurrentMeal(generateDemoAnalysis());
-      setIsScanning(false);
-    }, 2000);
+  const handleRetryWithSmallerImage = async () => {
+    if (!pendingRetryBase64) return;
+    try {
+      const smaller = await shrinkBase64Image(pendingRetryBase64);
+      setImagePreview(smaller);
+      await analyzeWithAI(smaller);
+    } catch (error) {
+      console.error('Error shrinking image:', error);
+      toast.error('Could not process image');
+    }
   };
 
   return (
@@ -179,7 +156,6 @@ export default function ScanPage() {
               <ScanUploader
                 healthProfile={healthProfile}
                 onFileSelect={handleFileSelect}
-                onDemoScan={handleDemoScan}
               />
             </motion.div>
           )}
@@ -207,6 +183,7 @@ export default function ScanPage() {
               <ScanErrorState
                 message={analysisError}
                 onRetry={handleRetry}
+                onRetryWithSmaller={pendingRetryBase64 ? handleRetryWithSmallerImage : undefined}
                 onReset={handleReset}
               />
             </motion.div>

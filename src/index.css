@@ -90,71 +90,72 @@
     --stat-glucose-foreground: 215 35% 30%;
   }
 
+  /* Dark mode – dark blue palette */
   .dark {
-    --background: 215 28% 8%;
-    --foreground: 210 20% 96%;
+    --background: 218 32% 7%;
+    --foreground: 212 25% 95%;
 
-    --card: 215 25% 12%;
-    --card-foreground: 210 20% 96%;
+    --card: 218 28% 10%;
+    --card-foreground: 212 25% 95%;
 
-    --popover: 215 25% 12%;
-    --popover-foreground: 210 20% 96%;
+    --popover: 218 28% 10%;
+    --popover-foreground: 212 25% 95%;
 
-    --primary: 210 35% 65%;
-    --primary-foreground: 215 28% 8%;
-    --primary-glow: 210 40% 72%;
+    --primary: 212 70% 58%;
+    --primary-foreground: 218 32% 7%;
+    --primary-glow: 212 75% 65%;
 
-    --secondary: 215 25% 16%;
-    --secondary-foreground: 210 20% 96%;
+    --secondary: 218 28% 14%;
+    --secondary-foreground: 212 25% 95%;
 
-    --muted: 215 22% 16%;
-    --muted-foreground: 210 15% 55%;
+    --muted: 218 24% 14%;
+    --muted-foreground: 212 18% 55%;
 
-    --accent: 188 40% 48%;
-    --accent-foreground: 215 28% 8%;
-    --accent-glow: 188 45% 55%;
+    --accent: 198 50% 48%;
+    --accent-foreground: 218 32% 7%;
+    --accent-glow: 198 55% 55%;
 
     --destructive: 0 55% 52%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 162 35% 45%;
-    --success-foreground: 215 28% 8%;
-    --success-glow: 162 40% 55%;
+    --success: 162 40% 45%;
+    --success-foreground: 218 32% 7%;
+    --success-glow: 162 45% 55%;
 
     --warning: 35 70% 50%;
-    --warning-foreground: 215 28% 8%;
+    --warning-foreground: 218 32% 7%;
 
     --risk-high: 0 55% 55%;
     --risk-high-foreground: 0 0% 100%;
     --risk-medium: 35 65% 52%;
     --risk-medium-foreground: 30 90% 12%;
-    --risk-low: 162 35% 48%;
+    --risk-low: 162 40% 48%;
     --risk-low-foreground: 0 0% 100%;
 
-    --suggestion: 215 25% 18%;
-    --suggestion-foreground: 210 25% 85%;
+    --suggestion: 218 26% 16%;
+    --suggestion-foreground: 212 22% 88%;
 
-    --border: 215 22% 20%;
-    --input: 215 22% 18%;
-    --ring: 210 35% 65%;
+    --border: 218 22% 18%;
+    --input: 218 22% 16%;
+    --ring: 212 70% 58%;
 
-    --sidebar-background: 215 30% 8%;
-    --sidebar-foreground: 210 20% 96%;
-    --sidebar-primary: 210 35% 65%;
-    --sidebar-primary-foreground: 215 28% 8%;
-    --sidebar-accent: 215 28% 16%;
-    --sidebar-accent-foreground: 210 20% 96%;
-    --sidebar-border: 215 25% 20%;
-    --sidebar-ring: 188 40% 50%;
+    --sidebar-background: 218 32% 6%;
+    --sidebar-foreground: 212 25% 95%;
+    --sidebar-primary: 212 70% 58%;
+    --sidebar-primary-foreground: 218 32% 7%;
+    --sidebar-accent: 218 26% 14%;
+    --sidebar-accent-foreground: 212 25% 95%;
+    --sidebar-border: 218 22% 18%;
+    --sidebar-ring: 198 50% 50%;
 
-    --stat-carbs: 210 30% 16%;
-    --stat-carbs-foreground: 210 40% 75%;
-    --stat-protein: 162 30% 16%;
-    --stat-protein-foreground: 162 45% 70%;
-    --stat-calories: 35 35% 16%;
+    --stat-carbs: 212 30% 14%;
+    --stat-carbs-foreground: 212 55% 72%;
+    --stat-protein: 162 30% 14%;
+    --stat-protein-foreground: 162 50% 70%;
+    --stat-calories: 35 35% 14%;
     --stat-calories-foreground: 35 55% 70%;
-    --stat-glucose: 215 30% 16%;
-    --stat-glucose-foreground: 215 45% 75%;
+    --stat-glucose: 218 30% 14%;
+    --stat-glucose-foreground: 212 50% 75%;
   }
 }
 
@@ -215,6 +216,11 @@
 
   .gradient-hero {
     background: linear-gradient(160deg, hsl(210 35% 26%) 0%, hsl(215 30% 22%) 100%);
+  }
+
+  /* Top banner – dark charcoal, less blue */
+  .header-banner {
+    background: linear-gradient(160deg, hsl(220 14% 11%) 0%, hsl(215 12% 9%) 100%);
   }
 
   /* Glass effect cards */
@@ -287,30 +293,42 @@
     }
   }
 
+  /* Smooth transition base – use across interactive elements */
+  .transition-smooth {
+    @apply transition-all duration-300;
+    transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .transition-smooth-fast {
+    @apply transition-all duration-200;
+    transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
   /* Card hover - subtle micro-animations */
   .card-hover {
-    @apply transition-all duration-200 ease-out;
-    transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    @apply transition-all duration-300;
+    transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   .card-hover:hover {
     @apply shadow-soft;
-    transform: translateY(-1px);
+    transform: translateY(-2px);
   }
 
   .card-hover:active {
     transform: translateY(0) scale(0.99);
+    transition-duration: 0.15s;
   }
 
   /* Card entrance animation */
   .card-enter {
-    animation: card-enter 0.4s ease-out forwards;
+    animation: card-enter 0.45s cubic-bezier(0.32, 0.72, 0, 1) forwards;
   }
 
   @keyframes card-enter {
     from {
       opacity: 0;
-      transform: translateY(12px) scale(0.96);
+      transform: translateY(10px) scale(0.98);
     }
     to {
       opacity: 1;
@@ -328,8 +346,8 @@
 
   /* Button press - micro feedback */
   .btn-press {
-    @apply transition-transform duration-150 ease-out;
-    transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    @apply transition-transform duration-150;
+    transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   .btn-press:active {
@@ -338,8 +356,8 @@
 
   /* Subtle hover lift for interactive elements */
   .hover-lift {
-    @apply transition-transform duration-200 ease-out;
-    transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    @apply transition-transform duration-200;
+    transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   .hover-lift:hover {
@@ -348,6 +366,12 @@
 
   .hover-lift:active {
     transform: translateY(0);
+  }
+
+  /* Input focus – smooth ring */
+  .input-smooth:focus-within {
+    @apply transition-shadow duration-200;
+    transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   /* Button hover - subtle */

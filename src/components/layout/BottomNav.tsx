@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 import { Scan, Clock, BarChart3, User, Droplet, Camera } from 'lucide-react';
+import { layoutGlide, springMicro, tapScaleLight } from '@/lib/animations';
 
 const navItems = [
   { path: '/scan', label: 'Analyze', icon: Camera, isMain: true },
@@ -23,7 +24,12 @@ export function BottomNav() {
   ].filter(Boolean);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-card/95 backdrop-blur-xl safe-bottom">
+    <motion.nav
+      initial={{ y: 20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-card/95 backdrop-blur-xl safe-bottom transition-smooth"
+    >
       <div className="mx-auto max-w-lg">
         <div className="flex items-center justify-around py-2">
           {orderedItems.map((item) => {
@@ -40,8 +46,10 @@ export function BottomNav() {
                   className="relative -mt-6 flex flex-col items-center"
                 >
                   <motion.div
-                    whileTap={{ scale: 0.95 }}
-                    className="flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-medium ring-4 ring-card"
+                    whileTap={tapScaleLight}
+                    whileHover={{ scale: 1.03 }}
+                    transition={springMicro}
+                    className="flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-medium ring-4 ring-card transition-smooth"
                   >
                     <Icon className="h-6 w-6 text-white" />
                   </motion.div>
@@ -59,18 +67,18 @@ export function BottomNav() {
                 className="group relative flex flex-col items-center gap-1 px-3 py-2"
               >
                 <motion.div 
-                  whileTap={{ scale: 0.9 }}
+                  whileTap={tapScaleLight}
                   className="relative"
                 >
                   {isActive && (
                     <motion.div
                       layoutId="nav-indicator"
                       className="absolute -inset-2.5 rounded-xl bg-primary/10"
-                      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                      transition={layoutGlide}
                     />
                   )}
                   <Icon
-                    className={`relative h-5 w-5 transition-colors ${
+                    className={`relative h-5 w-5 transition-smooth-fast ${
                       isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
                     }`}
                   />
@@ -86,7 +94,7 @@ export function BottomNav() {
                   <motion.div
                     layoutId="activeTab"
                     className="absolute -top-0.5 h-0.5 w-5 rounded-full bg-primary"
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    transition={layoutGlide}
                   />
                 )}
               </Link>
@@ -94,6 +102,6 @@ export function BottomNav() {
           })}
         </div>
       </div>
-    </nav>
+    </motion.nav>
   );
 }

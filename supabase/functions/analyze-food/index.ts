@@ -10,6 +10,7 @@ function getCorsHeaders(origin: string | null) {
     : ALLOWED_ORIGINS.split(',')[0]?.trim() || '*';
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
   };
 }
@@ -122,7 +123,7 @@ serve(async (req) => {
         console.error('Image size exceeds limit:', sizeInBytes, 'bytes');
         return new Response(
           JSON.stringify({ error: 'Image size exceeds 10MB limit' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 400, headers: jsonHeaders }
         );
       }
     }
@@ -132,7 +133,7 @@ serve(async (req) => {
       console.error('Invalid image format');
       return new Response(
         JSON.stringify({ error: 'Invalid image format. Supported formats: JPEG, PNG, WebP, GIF' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: jsonHeaders }
       );
     }
 
@@ -141,115 +142,7 @@ serve(async (req) => {
       if (typeof healthProfile !== 'object') {
         return new Response(
           JSON.stringify({ error: 'Invalid healthProfile: must be an object' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      // Validate required fields and types
-      const { diabetesType, usesInsulin, conditions, goals, allergies, dietaryRestrictions, age, weight, height, gender, activityLevel } = healthProfile;
-      
-      if (diabetesType !== undefined && typeof diabetesType !== 'string') {
-        return new Response(
-          JSON.stringify({ error: 'Invalid healthProfile: diabetesType must be a string' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (usesInsulin !== undefined && typeof usesInsulin !== 'boolean') {
-        return new Response(
-          JSON.stringify({ error: 'Invalid healthProfile: usesInsulin must be a boolean' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (conditions !== undefined && !Array.isArray(conditions)) {
-        return new Response(
-          JSON.stringify({ error: 'Invalid healthProfile: conditions must be an array' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (goals !== undefined && !Array.isArray(goals)) {
-        return new Response(
-          JSON.stringify({ error: 'Invalid healthProfile: goals must be an array' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (allergies !== undefined && !Array.isArray(allergies)) {
-        return new Response(
-          JSON.stringify({ error: 'Invalid healthProfile: allergies must be an array' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (dietaryRestrictions !== undefined && !Array.isArray(dietaryRestrictions)) {
-        return new Response(
-          JSON.stringify({ error: 'Invalid healthProfile: dietaryRestrictions must be an array' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      // Validate numeric fields with reasonable bounds
-      if (age !== undefined && (typeof age !== 'number' || age < 1 || age > 150)) {
-        return new Response(
-          JSON.stringify({ error: 'Invalid healthProfile: age must be a number between 1 and 150' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (weight !== undefined && (typeof weight !== 'number' || weight < 1 || weight > 1000)) {
-        return new Response(
-          JSON.stringify({ error: 'Invalid healthProfile: weight must be a number between 1 and 1000 kg' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (height !== undefined && (typeof height !== 'number' || height < 20 || height > 300)) {
-        return new Response(
-          JSON.stringify({ error: 'Invalid healthProfile: height must be a number between 20 and 300 cm' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (gender !== undefined && typeof gender !== 'string') {
-        return new Response(
-          JSON.stringify({ error: 'Invalid healthProfile: gender must be a string' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      if (activityLevel !== undefined && typeof activityLevel !== 'string') {
-        return new Response(
-          JSON.stringify({ error: 'Invalid healthProfile: activityLevel must be a string' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-    }
-
-    // Validate imageUrl if provided
-    if (imageUrl !== undefined && imageUrl !== null) {
-      if (typeof imageUrl !== 'string') {
-        return new Response(
-          JSON.stringify({ error: 'Invalid imageUrl: must be a string' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      // Validate URL format
-      try {
-        const url = new URL(imageUrl);
-        // Only allow http and https protocols
-        if (!['http:', 'https:'].includes(url.protocol)) {
-          return new Response(
-            JSON.stringify({ error: 'Invalid imageUrl: only http and https protocols are allowed' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-      } catch {
-        return new Response(
-          JSON.stringify({ error: 'Invalid imageUrl: must be a valid URL' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 400, headers: jsonHeaders }
         );
       }
     }
@@ -261,50 +154,33 @@ serve(async (req) => {
     if (!imageData && imageUrl) {
       try {
         const imageResponse = await fetch(imageUrl);
-        
-        // Validate response status
         if (!imageResponse.ok) {
           return new Response(
             JSON.stringify({ error: 'Failed to fetch image from URL: server returned ' + imageResponse.status }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 400, headers: jsonHeaders }
           );
         }
-        
-        // Validate content type from URL
         const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
         if (!contentType.startsWith('image/')) {
           return new Response(
             JSON.stringify({ error: 'Invalid image URL: URL does not point to an image' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 400, headers: jsonHeaders }
           );
         }
-        
-        // Validate size from URL
-        const contentLength = imageResponse.headers.get('content-length');
-        if (contentLength && parseInt(contentLength) > MAX_IMAGE_SIZE_BYTES) {
-          return new Response(
-            JSON.stringify({ error: 'Image from URL exceeds 10MB limit' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        
         const imageBuffer = await imageResponse.arrayBuffer();
-        
-        // Double-check size after download
         if (imageBuffer.byteLength > MAX_IMAGE_SIZE_BYTES) {
           return new Response(
             JSON.stringify({ error: 'Image from URL exceeds 10MB limit' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 400, headers: jsonHeaders }
           );
         }
-        
         const base64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
         imageData = `data:${contentType};base64,${base64}`;
       } catch (fetchError) {
         console.error('Failed to fetch image from URL:', fetchError);
         return new Response(
           JSON.stringify({ error: 'Failed to fetch image from URL' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 400, headers: jsonHeaders }
         );
       }
     }
@@ -312,28 +188,29 @@ serve(async (req) => {
     if (!imageData) {
       return new Response(
         JSON.stringify({ error: 'Image data is required (imageBase64 or imageUrl)' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: jsonHeaders }
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      console.error('LOVABLE_API_KEY is not configured');
+    // ========== GOOGLE GEMINI API CALL ==========
+
+    const GOOGLE_AI_KEY = Deno.env.get('GOOGLE_AI_KEY');
+    if (!GOOGLE_AI_KEY) {
+      console.error('GOOGLE_AI_KEY is not configured. Set it with: supabase secrets set GOOGLE_AI_KEY=your_key');
       return new Response(
-        JSON.stringify({ error: 'AI service not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'AI service not configured. Admin must set GOOGLE_AI_KEY secret.' }),
+        { status: 500, headers: jsonHeaders }
       );
     }
 
     // Build personalized context from health profile
     let profileContext = '';
     if (healthProfile) {
-      const conditions = healthProfile.conditions.map(c => c.name).join(', ');
-      const goals = healthProfile.goals.map(g => g.name).join(', ');
-      const allergies = healthProfile.allergies.join(', ');
+      const conditions = healthProfile.conditions?.map(c => c.name).join(', ') || '';
+      const goals = healthProfile.goals?.map(g => g.name).join(', ') || '';
+      const allergies = healthProfile.allergies?.join(', ') || '';
       
-      profileContext = `
-User Health Profile:
+      profileContext = `\nUser Health Profile:
 - Diabetes Type: ${healthProfile.diabetesType}
 - Uses Insulin: ${healthProfile.usesInsulin ? 'Yes' : 'No'}
 - Conditions: ${conditions || 'None specified'}
@@ -341,31 +218,27 @@ User Health Profile:
 - Allergies: ${allergies || 'None'}
 - Age: ${healthProfile.age}
 - Weight: ${healthProfile.weight}kg
-- Activity Level: ${healthProfile.activityLevel}
-`;
+- Activity Level: ${healthProfile.activityLevel}`;
     }
 
-    const systemPrompt = `You are a nutrition analysis AI for BiteSafe, a diabetes-focused meal scanner app. 
-Your role is to analyze food images and provide:
-1. Identification of all visible foods
-2. Estimated portion sizes
-3. Nutritional estimates (especially carbs, which are critical for diabetics)
-4. A blood sugar spike risk assessment
-5. Actionable suggestions to make the meal safer
+    const systemPrompt = `You are an expert nutritionist AI for BiteSafe, a diabetes-focused food scanner.
 
-IMPORTANT DISCLAIMERS:
-- This is decision support, NOT medical advice
-- Estimates are approximate and should not be used for insulin dosing
-- Always recommend consulting healthcare providers for medical decisions
+CRITICAL INSTRUCTIONS:
+1. Look VERY carefully at the actual food in the image. Identify each distinct food item you can see.
+2. Do NOT guess or hallucinate foods that are not visible. Only list what you can clearly see.
+3. Estimate portions based on visual cues (plate size, food proportions, depth).
+4. Use USDA nutritional data for accurate macronutrient values.
+5. Be specific with food names (e.g. "White Rice" not just "Rice", "Grilled Chicken Thigh" not just "Chicken").
 
+IMPORTANT: This is decision support, NOT medical advice.
 ${profileContext}
 
-Respond with a JSON object in this exact format:
+Respond ONLY with a valid JSON object (no markdown fences, no explanation text). Use this exact schema:
 {
   "foods": [
     {
-      "name": "Food name",
-      "portion": "estimated portion (e.g., '1 cup', '150g')",
+      "name": "Specific food name as seen in image",
+      "portion": "estimated portion with weight (e.g., '1 cup (~180g)', '1 medium piece (~120g)')",
       "carbsGrams": number,
       "proteinGrams": number,
       "fatGrams": number,
@@ -383,104 +256,116 @@ Respond with a JSON object in this exact format:
   "totalSugar": number,
   "riskLevel": "low" | "medium" | "high",
   "riskScore": number (0-100),
-  "riskExplanation": "Brief explanation of why this risk level",
+  "riskExplanation": "Brief explanation referencing the specific foods identified",
   "suggestions": [
-    {
-      "id": "unique-id",
-      "icon": "emoji",
-      "text": "Actionable suggestion",
-      "type": "portion" | "swap" | "add" | "activity" | "timing"
-    }
+    { "id": "1", "icon": "emoji", "text": "Actionable suggestion specific to this meal", "type": "portion" | "swap" | "add" | "activity" | "timing" }
   ],
-  "tips": ["Personalized tip 1", "Personalized tip 2"]
+  "tips": ["Tip 1", "Tip 2"]
 }
 
-Risk scoring guidelines:
-- HIGH (70-100): High glycemic foods, large portions of refined carbs, high sugar
-- MEDIUM (40-69): Moderate carbs, some fiber/protein present, mixed meal
-- LOW (0-39): Low carb, high fiber/protein, low glycemic index foods
+Risk scoring guide:
+- HIGH (70-100): Refined carbs, white bread/rice/pasta, sugary items, fried starchy foods, low fiber
+- MEDIUM (40-69): Mixed meal with moderate carbs, some protein/fiber to offset
+- LOW (0-39): High protein/fat, low carb, high fiber, non-starchy vegetables
 
-Always provide at least 2-4 suggestions based on the risk level.`;
+Provide 2-4 actionable suggestions tailored to the specific foods seen.`;
 
-    console.log('Calling Lovable AI Gateway for food analysis...');
+    const userPrompt = 'Carefully examine this food image. Identify EVERY food item you can see, estimate portions accurately, and provide complete nutritional analysis with blood sugar risk assessment. Be precise — only list foods that are actually visible in the photo.';
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    // Strip the data URL prefix to get raw base64 for Gemini
+    const base64ForGemini = imageData.includes(',') ? imageData.split(',')[1] : imageData;
+    const mimeMatch = imageData.match(/^data:(image\/[a-zA-Z+]+);/);
+    const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_AI_KEY}`;
+
+    console.log('Calling Google Gemini API for food analysis...');
+
+    const response = await fetch(geminiUrl, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { 
-            role: 'user', 
-            content: [
-              {
-                type: 'text',
-                text: 'Analyze this meal image and provide nutritional information with blood sugar spike risk assessment.'
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: imageData.startsWith('data:') ? imageData : `data:image/jpeg;base64,${imageData}`
-                }
-              }
-            ]
-          }
-        ],
-        max_tokens: 2000,
-        temperature: 0.3,
+        contents: [{
+          parts: [
+            { text: systemPrompt + '\n\n' + userPrompt },
+            { inlineData: { mimeType, data: base64ForGemini } },
+          ],
+        }],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 8192,
+        },
       }),
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Gemini API error:', response.status, errorText);
+
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 429, headers: jsonHeaders }
         );
       }
-      if (response.status === 402) {
+      if (response.status === 400) {
         return new Response(
-          JSON.stringify({ error: 'AI credits exhausted. Please add credits to continue.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: 'Invalid API key. Admin must update GOOGLE_AI_KEY secret.' }),
+          { status: 500, headers: jsonHeaders }
         );
       }
-      
-      const errorText = await response.text();
-      console.error('AI gateway error:', response.status, errorText);
       return new Response(
         JSON.stringify({ error: 'Failed to analyze food image' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: jsonHeaders }
       );
     }
 
-    const aiResponse = await response.json();
-    const content = aiResponse.choices?.[0]?.message?.content;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const geminiData: any = await response.json();
+    const parts = geminiData.candidates?.[0]?.content?.parts;
 
-    if (!content) {
-      console.error('No content in AI response');
+    if (!parts || parts.length === 0) {
+      console.error('No parts in Gemini response:', JSON.stringify(geminiData).slice(0, 500));
       return new Response(
         JSON.stringify({ error: 'No analysis returned from AI' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: jsonHeaders }
       );
     }
 
-    // Parse the JSON from the AI response
+    // Collect all text from all parts
+    let fullText = '';
+    for (const part of parts) {
+      if (part.text) fullText += part.text;
+    }
+
+    if (!fullText) {
+      console.error('No text in parts');
+      return new Response(
+        JSON.stringify({ error: 'No analysis returned from AI' }),
+        { status: 500, headers: jsonHeaders }
+      );
+    }
+
+    // Parse the JSON — robust extraction
     let analysisData;
     try {
-      // Extract JSON from potential markdown code blocks
-      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, content];
-      const jsonStr = jsonMatch[1].trim();
+      let jsonStr = fullText.trim();
+      // Strip markdown fences if present
+      const fenceMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (fenceMatch) jsonStr = fenceMatch[1].trim();
+      // Find first { to last }
+      const firstBrace = jsonStr.indexOf('{');
+      const lastBrace = jsonStr.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace > firstBrace) {
+        jsonStr = jsonStr.slice(firstBrace, lastBrace + 1);
+      }
       analysisData = JSON.parse(jsonStr);
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError);
-      console.log('Raw content:', content);
+      console.log('Raw text:', fullText.slice(0, 1000));
       return new Response(
-        JSON.stringify({ error: 'Failed to parse food analysis', rawContent: content }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Failed to parse food analysis. Try again.' }),
+        { status: 500, headers: jsonHeaders }
       );
     }
 
@@ -492,14 +377,14 @@ Always provide at least 2-4 suggestions based on the risk level.`;
         analysis: analysisData,
         disclaimer: 'This is for informational purposes only and should not be used for insulin dosing or medical decisions.'
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: jsonHeaders }
     );
 
   } catch (error) {
     console.error('Error in analyze-food function:', error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error occurred' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...getCorsHeaders(null), 'Content-Type': 'application/json' } }
     );
   }
 });
