@@ -17,7 +17,7 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <div className="gradient-hero relative flex flex-1 flex-col items-center justify-center overflow-hidden px-6 py-12 text-primary-foreground">
+      <div className="header-banner relative flex flex-1 flex-col items-center justify-center overflow-hidden px-6 py-12 text-white">
         <motion.div
           initial={{ scale: 0.94, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -40,7 +40,7 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
           initial={{ y: 10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.1, duration: 0.32, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="mb-10 max-w-xs text-center text-sm leading-relaxed text-primary-foreground/80"
+          className="mb-10 max-w-xs text-center text-sm leading-relaxed text-white/80"
         >
           Food safety scanner for better blood sugar control
         </motion.p>

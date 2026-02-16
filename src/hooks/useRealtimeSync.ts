@@ -1,16 +1,29 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { cleanupOldMeals } from '@/hooks/useSupabase';
 import { toast } from 'sonner';
 
 export function useRealtimeSync() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const cleanupRan = useRef(false);
+
+  // Run 30-day meal cleanup once per session
+  useEffect(() => {
+    if (!user || cleanupRan.current) return;
+    cleanupRan.current = true;
+    cleanupOldMeals(user.id).then((count) => {
+      if (count > 0) {
+        console.log(`[BiteSafe] Cleaned up ${count} meals older than 30 days`);
+        queryClient.invalidateQueries({ queryKey: ['meals'] });
+      }
+    });
+  }, [user, queryClient]);
 
   useEffect(() => {
     if (!user) return;
-    if (user.id.startsWith('demo-')) return;
 
     let mealsChannel: ReturnType<typeof supabase.channel>;
     let glucoseChannel: ReturnType<typeof supabase.channel>;

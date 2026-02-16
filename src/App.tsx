@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +12,7 @@ import { useProfile } from "./hooks/useSupabase";
 
 // Lazy-load pages to reduce initial bundle and improve load time
 const Index = lazy(() => import("./pages/Index"));
+const AuthPage = lazy(() => import("./pages/AuthPage"));
 const ScanPage = lazy(() => import("./pages/ScanPage"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const MealDetailPage = lazy(() => import("./pages/MealDetailPage"));
@@ -54,10 +56,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
   
+  // No user → send to auth page
   if (!user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/auth" replace />;
   }
   
+  // User exists but hasn't finished onboarding → send to Index (which shows OnboardingFlow)
   if (!profile?.is_onboarded) {
     return <Navigate to="/" replace />;
   }
@@ -85,6 +89,7 @@ function AppRoutes() {
       <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<AuthPage />} />
         <Route
           path="/scan"
           element={
@@ -142,17 +147,19 @@ function AppRoutes() {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ErrorBoundary>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner position="top-center" />
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </ErrorBoundary>
+    <ThemeProvider attribute="class" defaultTheme="dark" forcedTheme="dark" disableTransitionOnChange>
+      <ErrorBoundary>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner position="top-center" />
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </ErrorBoundary>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

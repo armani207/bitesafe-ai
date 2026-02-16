@@ -14,7 +14,7 @@ export function Header({ title, subtitle, showGreeting, children }: HeaderProps)
   const userProfile = useAppStore((state) => state.userProfile);
 
   return (
-    <header className="gradient-hero relative overflow-hidden px-4 pb-8 pt-12 text-primary-foreground">
+    <header className="header-banner relative overflow-hidden px-4 pb-8 pt-12 text-white">
       <div className="relative mx-auto max-w-lg">
         <div className="mb-5 flex items-center justify-between">
           <motion.div 
@@ -58,7 +58,7 @@ export function Header({ title, subtitle, showGreeting, children }: HeaderProps)
             <h1 className="text-xl font-semibold">
               Welcome back, {typeof userProfile.name === 'string' ? userProfile.name.split(' ')[0] : 'User'}
             </h1>
-            <p className="text-sm text-primary-foreground/80">Ready to analyze your next meal?</p>
+            <p className="text-sm text-white/80">Ready to analyze your next meal?</p>
           </motion.div>
         )}
 
@@ -70,7 +70,7 @@ export function Header({ title, subtitle, showGreeting, children }: HeaderProps)
           >
             <h1 className="text-xl font-semibold">{title}</h1>
             {subtitle && (
-              <p className="mt-1 text-sm text-primary-foreground/75">{subtitle}</p>
+              <p className="mt-1 text-sm text-white/75">{subtitle}</p>
             )}
           </motion.div>
         )}

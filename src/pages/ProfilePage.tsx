@@ -3,8 +3,6 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { useProfile, useMeals, useUpdateProfile, dbProfileToHealthProfile } from '@/hooks/useSupabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { motion } from 'framer-motion';
 import { 
   User, 
@@ -18,6 +16,8 @@ import {
   ShieldAlert,
   Camera,
   Trash2,
+  Clock,
+  Mail,
 } from 'lucide-react';
 import { uploadAvatar, validateAvatarFile } from '@/lib/avatarStorage';
 import { toast } from 'sonner';
@@ -36,13 +36,10 @@ import {
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 function ProfileContent() {
-  const { signOut, isAnonymous, linkAnonymousAccount, user, deleteAccount } = useAuth();
+  const { signOut, user, deleteAccount } = useAuth();
   const updateProfile = useUpdateProfile();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [upgradeEmail, setUpgradeEmail] = useState('');
-  const [upgradePassword, setUpgradePassword] = useState('');
-  const [isUpgrading, setIsUpgrading] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const { data: dbProfile } = useProfile();
   const { data: dbMeals = [] } = useMeals();
@@ -59,11 +56,6 @@ function ProfileContent() {
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user || !dbProfile) return;
-    if (user.id.startsWith('demo-')) {
-      toast.info('Avatar upload is not available in demo mode');
-      e.target.value = '';
-      return;
-    }
     const validation = validateAvatarFile(file);
     if (!validation.valid) {
       toast.error(validation.error);
@@ -101,15 +93,6 @@ function ProfileContent() {
         toast.error(error.message || 'Failed to reset');
         return;
       }
-      if (typeof localStorage !== 'undefined') {
-        const keysToRemove: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (k?.startsWith('sb-')) keysToRemove.push(k);
-        }
-        ['bitesafe-demo-profile', 'bitesafe-demo-meals', 'bitesafe-demo-glucose'].forEach((k) => keysToRemove.push(k));
-        keysToRemove.forEach((k) => localStorage.removeItem(k));
-      }
       toast.success('Account reset. You can start fresh.');
       navigate('/');
       window.location.reload();
@@ -117,29 +100,6 @@ function ProfileContent() {
       toast.error('Failed to reset account');
     } finally {
       setIsResetting(false);
-    }
-  };
-
-  const handleUpgradeAccount = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!upgradeEmail || !upgradePassword || upgradePassword.length < 6) {
-      toast.error('Please enter a valid email and password (min 6 characters)');
-      return;
-    }
-    setIsUpgrading(true);
-    try {
-      const { error } = await linkAnonymousAccount(upgradeEmail, upgradePassword);
-      if (error) throw error;
-      toast.success('Account upgraded! Your data is now saved securely.');
-      setUpgradeEmail('');
-      setUpgradePassword('');
-      if (dbProfile) {
-        await updateProfile.mutateAsync({ email: upgradeEmail });
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to upgrade account');
-    } finally {
-      setIsUpgrading(false);
     }
   };
 
@@ -215,7 +175,7 @@ function ProfileContent() {
                 className="h-8 text-xs"
               >
                 <Camera className="mr-1.5 h-3.5 w-3.5" />
-                {isUploadingAvatar ? 'Uploading…' : 'Change photo'}
+                {isUploadingAvatar ? 'Uploading...' : 'Change photo'}
               </Button>
             </div>
             <input
@@ -234,6 +194,12 @@ function ProfileContent() {
                      healthProfile?.diabetesType === 'prediabetes' ? 'Prediabetes' : 'Gestational'} Diabetes`
                   : 'Health conscious user'}
               </p>
+              {user?.email && (
+                <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Mail className="h-3 w-3" />
+                  <span>{user.email}</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -349,50 +315,18 @@ function ProfileContent() {
           </motion.div>
         )}
 
-        {/* Anonymous user upgrade CTA */}
-        {isAnonymous && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45 }}
-            className="mb-6 rounded-xl border border-primary/30 bg-primary/5 p-4"
-          >
-            <div className="mb-3 flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-primary" />
-              <h3 className="text-sm font-semibold">Save your data</h3>
-            </div>
-            <p className="mb-4 text-xs text-muted-foreground">
-              Create an account to keep your meal history and insights across devices.
-            </p>
-            <form onSubmit={handleUpgradeAccount} className="space-y-3">
-              <div>
-                <Label htmlFor="upgrade-email" className="text-xs">Email</Label>
-                <Input
-                  id="upgrade-email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={upgradeEmail}
-                  onChange={(e) => setUpgradeEmail(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label htmlFor="upgrade-password" className="text-xs">Password (min 6 characters)</Label>
-                <Input
-                  id="upgrade-password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={upgradePassword}
-                  onChange={(e) => setUpgradePassword(e.target.value)}
-                  className="mt-1"
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={isUpgrading}>
-                {isUpgrading ? 'Upgrading...' : 'Create account & save data'}
-              </Button>
-            </form>
-          </motion.div>
-        )}
+        {/* 30-day retention note */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+          className="mb-6 flex items-start gap-3 rounded-xl border border-border/60 bg-muted/30 p-4"
+        >
+          <Clock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <p className="text-xs text-muted-foreground">
+            Meal logs are kept for 30 days, then automatically cleared to keep your account tidy.
+          </p>
+        </motion.div>
 
         {/* Actions */}
         <motion.div
@@ -435,7 +369,7 @@ function ProfileContent() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Reset account?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will sign you out and clear all stored login data from this device. You can start fresh with a new anonymous session. Your data on our servers may still exist until you create a new account.
+                  This will sign you out and clear all stored login data from this device. You can create a new account or sign in again.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

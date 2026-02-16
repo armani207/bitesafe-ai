@@ -3,7 +3,7 @@ import { RiskBadge, RiskAlert } from '@/components/ui/RiskBadge';
 import { SuggestionGrid, TipCard } from '@/components/ui/SuggestionCard';
 import { StatRow } from '@/components/ui/StatCard';
 import { MealAnalysis } from '@/types/health';
-import { Save, RefreshCw, AlertCircle, Target, ArrowRight } from 'lucide-react';
+import { Save, RefreshCw, AlertCircle, Target, ArrowRight, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ScanResultsProps {
@@ -40,6 +40,21 @@ export function ScanResults({ meal, onSave, onReset, isSaving }: ScanResultsProp
             loading="lazy"
             className="aspect-[4/3] w-full object-cover"
           />
+        </div>
+      )}
+
+      {/* Demo Mode Banner */}
+      {meal.isDemo && (
+        <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3">
+          <FlaskConical className="mt-0.5 h-5 w-5 flex-shrink-0 text-primary" />
+          <div>
+            <p className="text-sm font-semibold text-primary">Demo Mode — Not Real Analysis</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              These results are sample data, not based on your actual photo. To enable real AI food analysis, 
+              add a free Google AI API key to your <code className="rounded bg-secondary px-1">.env</code> file.
+              Get one at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80">aistudio.google.com/apikey</a>
+            </p>
+          </div>
         </div>
       )}
 

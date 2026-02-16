@@ -2,6 +2,8 @@
 
 ## Step-by-Step Deployment
 
+**Before deploying:** Run the pre-deploy checklist in [TESTING.md](TESTING.md) — validate AI analysis and stress-test the app.
+
 1. **Push to GitHub** (from your terminal): `git push origin main`
 2. **Connect repo to Vercel**: vercel.com → Add New Project → Import `bitesafe-ai`
 3. **Add env vars in Vercel**: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` (do NOT add `VITE_DEV_BYPASS_AUTH`)

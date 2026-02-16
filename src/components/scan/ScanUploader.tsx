@@ -1,16 +1,16 @@
 import { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Camera, Upload, Shield, Activity } from 'lucide-react';
+import { Camera, Shield, Activity } from 'lucide-react';
 import { HealthProfile } from '@/types/health';
+import { springGentle, staggerContainer, staggerItem } from '@/lib/animations';
 
 interface ScanUploaderProps {
   healthProfile: HealthProfile | null;
   onFileSelect: (file: File) => void;
-  onDemoScan: () => void;
 }
 
-export function ScanUploader({ healthProfile, onFileSelect, onDemoScan }: ScanUploaderProps) {
+export function ScanUploader({ healthProfile, onFileSelect }: ScanUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,12 +21,21 @@ export function ScanUploader({ healthProfile, onFileSelect, onDemoScan }: ScanUp
   };
 
   return (
-    <div className="space-y-4">
+    <motion.div
+      variants={staggerContainer}
+      initial="initial"
+      animate="animate"
+      className="space-y-4"
+    >
       {/* Camera/Upload area */}
-      <button
+      <motion.button
         type="button"
+        variants={staggerItem}
         onClick={() => fileInputRef.current?.click()}
-        className="flex aspect-[4/3] w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-primary/30 bg-secondary/50 transition-colors hover:border-primary/50 hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
+        transition={springGentle}
+        className="flex aspect-[4/3] w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-primary/30 bg-secondary/50 transition-smooth hover:border-primary/50 hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
         aria-label="Capture or upload a meal photo for analysis"
       >
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
@@ -39,41 +48,31 @@ export function ScanUploader({ healthProfile, onFileSelect, onDemoScan }: ScanUp
         <p className="mt-2 text-xs text-muted-foreground">
           AI-powered nutritional analysis with personalized risk scoring
         </p>
-      </button>
+      </motion.button>
 
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
+        accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif"
         capture="environment"
         onChange={handleFileChange}
         className="hidden"
       />
 
-      <div className="flex gap-3">
+      <motion.div variants={staggerItem}>
         <Button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          className="flex-1"
+          className="w-full transition-smooth"
           size="lg"
         >
           <Camera className="mr-2 h-5 w-5" />
           Analyze Meal
         </Button>
-        <Button
-          type="button"
-          onClick={onDemoScan}
-          variant="outline"
-          className="flex-1"
-          size="lg"
-        >
-          <Upload className="mr-2 h-5 w-5" />
-          Demo Analysis
-        </Button>
-      </div>
+      </motion.div>
 
       {healthProfile && (
-        <div className="rounded-xl border border-border bg-card p-4">
+        <motion.div variants={staggerItem} className="rounded-xl border border-border bg-card p-4 card-hover">
           <div className="flex items-center gap-2 mb-3">
             <Shield className="h-4 w-4 text-primary" />
             <h4 className="text-sm font-semibold">Active Health Profile</h4>
@@ -98,17 +97,17 @@ export function ScanUploader({ healthProfile, onFileSelect, onDemoScan }: ScanUp
               </span>
             ))}
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Clinical note */}
-      <div className="flex items-start gap-2 rounded-lg bg-muted/50 px-4 py-3">
+      <motion.div variants={staggerItem} className="flex items-start gap-2 rounded-lg bg-muted/50 px-4 py-3 transition-smooth">
         <Activity className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
         <p className="text-xs text-muted-foreground">
           Results are for informational purposes only and should not replace clinical guidance. 
           Consult your healthcare provider for treatment decisions.
         </p>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
