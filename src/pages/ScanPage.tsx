@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { slideTransition } from '@/lib/animations';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -17,7 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function ScanPage() {
   const { user, session } = useAuth();
   const { data: dbProfile } = useProfile();
-  const healthProfile = dbProfileToHealthProfile(dbProfile ?? null);
+  const healthProfile = useMemo(() => dbProfileToHealthProfile(dbProfile ?? null), [dbProfile]);
   const addMeal = useAddMeal();
 
   const [isScanning, setIsScanning] = useState(false);
@@ -70,7 +70,9 @@ export default function ScanPage() {
       await analyzeWithAI(compressed);
     } catch (error) {
       setIsScanning(false);
-      console.error('Error processing image:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error processing image:', error);
+      }
       const msg = error instanceof Error ? error.message : 'Failed to process image';
       setAnalysisError(msg);
       toast.error(msg);
@@ -86,7 +88,9 @@ export default function ScanPage() {
         try {
           imageUrlToSave = await uploadMealImageFromBase64(user.id, imageUrlToSave);
         } catch (imgErr) {
-          console.warn('Image upload failed, saving meal without image:', imgErr);
+          if (import.meta.env.DEV) {
+            console.warn('Image upload failed, saving meal without image:', imgErr);
+          }
           imageUrlToSave = ''; // Save without image — meal data is what matters
         }
       }
@@ -109,7 +113,9 @@ export default function ScanPage() {
       toast.success('Meal saved to history!');
       setCurrentMeal({ ...currentMeal, saved: true });
     } catch (error) {
-      console.error('Failed to save meal:', error);
+      if (import.meta.env.DEV) {
+        console.error('Failed to save meal:', error);
+      }
       toast.error('Failed to save meal');
     }
   };
@@ -136,7 +142,9 @@ export default function ScanPage() {
       setImagePreview(smaller);
       await analyzeWithAI(smaller);
     } catch (error) {
-      console.error('Error shrinking image:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error shrinking image:', error);
+      }
       toast.error('Could not process image');
     }
   };

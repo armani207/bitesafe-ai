@@ -36,6 +36,12 @@ export default defineConfig(({ mode }) => {
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/supabase-proxy/, ""),
       },
+      "/supabase-proxy/realtime": {
+        target: supabaseUrl.replace("https://", "wss://"),
+        changeOrigin: true,
+        ws: true,
+        rewrite: (p) => p.replace(/^\/supabase-proxy/, ""),
+      },
     },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),

@@ -105,7 +105,7 @@ export function useUpdateProfile() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
     },
   });
 }
@@ -192,7 +192,29 @@ export function useAddMeal() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['meals'] });
+      queryClient.invalidateQueries({ queryKey: ['meals', user?.id] });
+    },
+  });
+}
+
+export function useDeleteMeal() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (mealId: string) => {
+      if (!user) throw new Error('Not authenticated');
+      const { error } = await supabase
+        .from('meals')
+        .delete()
+        .eq('id', mealId)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      return mealId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['meals', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['meals', 'infinite', user?.id] });
     },
   });
 }
@@ -270,7 +292,7 @@ export function useAddGlucoseReading() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['glucose_readings'] });
+      queryClient.invalidateQueries({ queryKey: ['glucose_readings', user?.id] });
     },
   });
 }
@@ -286,7 +308,9 @@ export async function cleanupOldMeals(userId: string): Promise<number> {
     .lt('created_at', cutoff.toISOString())
     .select('id');
   if (error) {
-    console.error('Failed to clean up old meals:', error);
+    if (import.meta.env.DEV) {
+      console.error('Failed to clean up old meals:', error);
+    }
     return 0;
   }
   return data?.length ?? 0;

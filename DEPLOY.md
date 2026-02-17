@@ -9,7 +9,7 @@
 3. **Add env vars in Vercel**: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` (do NOT add `VITE_DEV_BYPASS_AUTH`)
 4. **Deploy** – Vercel will build and deploy
 5. **Run Supabase migrations** (see below)
-6. **Configure Edge Function** – set `CORS_ALLOWED_ORIGINS` to your Vercel URL, plus `SUPABASE_SERVICE_ROLE_KEY` and `LOVABLE_API_KEY`
+6. **Configure Edge Function** – set `CORS_ALLOWED_ORIGINS` to your production domain(s), plus `SUPABASE_SERVICE_ROLE_KEY` and `GOOGLE_AI_KEY`
 
 ---
 
@@ -39,9 +39,17 @@
 
 ## Supabase Edge Function (analyze-food)
 
-- [ ] Set `CORS_ALLOWED_ORIGINS` to your production domain (e.g. `https://your-app.vercel.app`)
+- [ ] Set `CORS_ALLOWED_ORIGINS` to your production domain (e.g. `https://your-app.vercel.app,https://bitesafe.ai`)
 - [ ] Set `SUPABASE_SERVICE_ROLE_KEY` for rate limiting
-- [ ] Set `LOVABLE_API_KEY` for AI analysis
+- [ ] Set `GOOGLE_AI_KEY` for AI analysis
+
+Set secrets with:
+
+```bash
+supabase secrets set CORS_ALLOWED_ORIGINS="https://bitesafe.ai,https://your-app.vercel.app"
+supabase secrets set GOOGLE_AI_KEY="your_google_key"
+supabase secrets set SUPABASE_SERVICE_ROLE_KEY="your_service_role_key"
+```
 
 ## Vercel Deployment
 

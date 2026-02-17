@@ -6,6 +6,7 @@ import { RiskBadge } from '@/components/ui/RiskBadge';
 import { format, isToday, isYesterday, formatDistanceToNow, startOfWeek } from 'date-fns';
 import { Utensils, ChevronRight, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { tapScaleLight } from '@/lib/animations';
 
 export default function HistoryPage() {
   const navigate = useNavigate();
@@ -129,6 +130,7 @@ export default function HistoryPage() {
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: groupIndex * 0.06 + mealIndex * 0.04, duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
+                      whileTap={tapScaleLight}
                       onClick={() => navigate(`/history/${meal.id}`)}
                       className="flex w-full items-center gap-4 rounded-xl border border-border bg-card p-3 text-left transition-all card-hover"
                     >

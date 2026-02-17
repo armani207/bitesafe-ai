@@ -51,7 +51,6 @@ export function validateImageFile(file: File): { valid: boolean; error?: string 
  * This is a pure JS decoder that works in all browsers (Chrome, Safari, Firefox).
  */
 async function convertHeicWithLibrary(file: File): Promise<File> {
-  console.log('[HEIC] Converting with heic2any library...');
   const heic2any = (await import('heic2any')).default;
   const blob = await heic2any({
     blob: file,
@@ -60,7 +59,6 @@ async function convertHeicWithLibrary(file: File): Promise<File> {
   });
   const resultBlob = Array.isArray(blob) ? blob[0] : blob;
   const newName = file.name.replace(/\.(heic|heif)$/i, '.jpg') || 'photo.jpg';
-  console.log('[HEIC] heic2any conversion success, size:', (resultBlob.size / 1024).toFixed(0), 'KB');
   return new File([resultBlob], newName, { type: 'image/jpeg' });
 }
 
@@ -69,7 +67,6 @@ async function convertHeicWithLibrary(file: File): Promise<File> {
  * Falls back to createImageBitmap → Canvas → JPEG.
  */
 async function convertHeicWithCanvas(file: File): Promise<File> {
-  console.log('[HEIC] Trying native browser decode via canvas...');
   const bitmap = await createImageBitmap(file);
   const canvas = document.createElement('canvas');
   canvas.width = bitmap.width;
@@ -86,7 +83,6 @@ async function convertHeicWithCanvas(file: File): Promise<File> {
     );
   });
   const newName = file.name.replace(/\.(heic|heif)$/i, '.jpg') || 'photo.jpg';
-  console.log('[HEIC] Canvas conversion success, size:', (jpegBlob.size / 1024).toFixed(0), 'KB');
   return new File([jpegBlob], newName, { type: 'image/jpeg' });
 }
 
@@ -96,20 +92,18 @@ async function convertHeicWithCanvas(file: File): Promise<File> {
  * 2. Native browser decode via canvas (Safari, newer Chrome)
  */
 async function convertHeicToJpeg(file: File): Promise<File> {
-  console.log('[HEIC] Starting conversion for:', file.name, 'type:', file.type, 'size:', (file.size / 1024 / 1024).toFixed(1), 'MB');
-
   // Method 1: heic2any library
   try {
     return await convertHeicWithLibrary(file);
-  } catch (err) {
-    console.warn('[HEIC] heic2any failed:', err);
+  } catch {
+    // heic2any failed, try canvas fallback
   }
 
   // Method 2: Native browser decode (Safari / macOS Chrome)
   try {
     return await convertHeicWithCanvas(file);
-  } catch (err) {
-    console.warn('[HEIC] Canvas fallback failed:', err);
+  } catch {
+    // Canvas fallback also failed
   }
 
   throw new Error(
@@ -140,7 +134,6 @@ export async function prepareImageForAnalysis(
   let result = await compressImage(workFile, options?.aggressive);
   const sizeBytes = Math.ceil((result.split(',')[1]?.length ?? 0) * 0.75);
   if (sizeBytes > MAX_PAYLOAD_BASE64_BYTES) {
-    console.log('[Image] Base64 too large (' + (sizeBytes / 1024 / 1024).toFixed(1) + 'MB), compressing aggressively');
     result = await compressImage(workFile, true);
   }
   return result;

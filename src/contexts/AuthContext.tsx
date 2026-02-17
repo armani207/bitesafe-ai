@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 interface AuthContextType {
@@ -18,6 +19,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     let cancelled = false;
@@ -37,6 +39,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (cancelled) return;
       setSession(existing);
       setUser(existing?.user ?? null);
+      setLoading(false);
+    }).catch(() => {
+      if (cancelled) return;
       setLoading(false);
     });
 
@@ -68,14 +73,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      queryClient.clear();
+      setUser(null);
+      setSession(null);
+    }
   };
 
   const deleteAccount = async (): Promise<{ error: Error | null }> => {
     try {
       await supabase.auth.signOut();
+      queryClient.clear();
       setUser(null);
       setSession(null);
       // Clear any Supabase auth tokens from localStorage

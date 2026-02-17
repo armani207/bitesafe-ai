@@ -119,3 +119,29 @@ export const cardEnter = {
     transition: { duration: 0.35, ease: easeOut },
   },
 };
+
+/** Button hover: subtle lift */
+export const hoverLift = { y: -1, scale: 1.01 };
+export const hoverLiftTransition = { type: 'tween' as const, duration: 0.2, ease: easeOut };
+
+/** Card hover: gentle elevation */
+export const cardHover = { y: -2, scale: 1.005 };
+export const cardHoverTransition = { type: 'tween' as const, duration: 0.25, ease: easeOut };
+
+/** Stagger for lists with slightly more delay (onboarding options) */
+export const staggerList = {
+  animate: {
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+};
+
+export const staggerListItem = {
+  initial: { opacity: 0, y: 6 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3, ease: easeOut },
+  },
+};

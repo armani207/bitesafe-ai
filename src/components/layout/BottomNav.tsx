@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
-import { Scan, Clock, BarChart3, User, Droplet, Camera } from 'lucide-react';
+import { Clock, BarChart3, User, Droplet, Camera } from 'lucide-react';
 import { layoutGlide, springMicro, tapScaleLight } from '@/lib/animations';
 
 const navItems = [

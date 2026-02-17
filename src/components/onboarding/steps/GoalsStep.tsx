@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { HealthProfile, HEALTH_GOALS, HealthGoal } from '@/types/health';
+import { easeOut, tapScaleLight } from '@/lib/animations';
 
 interface GoalsStepProps {
   data: Partial<HealthProfile>;
@@ -33,26 +35,46 @@ export function GoalsStep({ data, onUpdate, onNext, onBack }: GoalsStepProps) {
   return (
     <div className="flex min-h-screen flex-col">
       <div className="flex items-center justify-between p-4 pt-8">
-        <button onClick={onBack} className="rounded-lg p-2 hover:bg-muted">
+        <motion.button
+          whileTap={tapScaleLight}
+          onClick={onBack}
+          className="rounded-lg p-2 hover:bg-muted"
+        >
           <ArrowLeft className="h-5 w-5" />
-        </button>
+        </motion.button>
         <span className="text-sm text-muted-foreground">Step 3 of 7</span>
       </div>
 
       <div className="flex-1 px-6">
-        <h2 className="mb-2 text-2xl font-bold">What are your goals?</h2>
-        <p className="mb-6 text-muted-foreground">
+        <motion.h2
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: easeOut }}
+          className="mb-2 text-2xl font-bold"
+        >
+          What are your goals?
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: easeOut, delay: 0.04 }}
+          className="mb-6 text-muted-foreground"
+        >
           Select at least one goal to help us guide you
-        </p>
+        </motion.p>
 
         <div className="space-y-3">
-          {HEALTH_GOALS.map((goal) => {
+          {HEALTH_GOALS.map((goal, i) => {
             const isSelected = selected.some((g) => g.id === goal.id);
             return (
-              <button
+              <motion.button
                 key={goal.id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: easeOut, delay: 0.08 + i * 0.04 }}
+                whileTap={tapScaleLight}
                 onClick={() => toggleGoal(goal)}
-                className={`relative flex w-full items-center gap-4 rounded-xl border-2 p-4 text-left transition-all ${
+                className={`relative flex w-full items-center gap-4 rounded-xl border-2 p-4 text-left transition-colors ${
                   isSelected
                     ? 'border-primary bg-primary/5'
                     : 'border-border hover:border-primary/50'
@@ -61,17 +83,27 @@ export function GoalsStep({ data, onUpdate, onNext, onBack }: GoalsStepProps) {
                 <div className="text-2xl">{goal.icon}</div>
                 <div className="flex-1 font-semibold">{goal.name}</div>
                 {isSelected && (
-                  <div className="rounded-full bg-primary p-1">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                    className="rounded-full bg-primary p-1"
+                  >
                     <Check className="h-4 w-4 text-primary-foreground" />
-                  </div>
+                  </motion.div>
                 )}
-              </button>
+              </motion.button>
             );
           })}
         </div>
       </div>
 
-      <div className="p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: easeOut, delay: 0.4 }}
+        className="p-6"
+      >
         <Button
           onClick={handleContinue}
           disabled={!isValid}
@@ -80,7 +112,7 @@ export function GoalsStep({ data, onUpdate, onNext, onBack }: GoalsStepProps) {
         >
           Continue <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
-      </div>
+      </motion.div>
     </div>
   );
 }

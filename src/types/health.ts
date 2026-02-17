@@ -77,8 +77,6 @@ export interface MealAnalysis {
   suggestions: MealSuggestion[];
   tips: string[];
   saved: boolean;
-  /** True when results are demo data (no API key configured) */
-  isDemo?: boolean;
 }
 
 export interface MealSuggestion {
