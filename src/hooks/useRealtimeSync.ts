@@ -16,8 +16,7 @@ export function useRealtimeSync() {
     cleanupRan.current = true;
     cleanupOldMeals(user.id).then((count) => {
       if (count > 0) {
-        console.log(`[BiteSafe] Cleaned up ${count} meals older than 30 days`);
-        queryClient.invalidateQueries({ queryKey: ['meals'] });
+        queryClient.invalidateQueries({ queryKey: ['meals', user.id] });
       }
     });
   }, [user, queryClient]);
@@ -25,11 +24,11 @@ export function useRealtimeSync() {
   useEffect(() => {
     if (!user) return;
 
+    const userId = user.id;
     let mealsChannel: ReturnType<typeof supabase.channel>;
     let glucoseChannel: ReturnType<typeof supabase.channel>;
 
     try {
-      // Subscribe to meals table changes
       mealsChannel = supabase
         .channel('meals-sync')
       .on(
@@ -38,15 +37,14 @@ export function useRealtimeSync() {
           event: 'INSERT',
           schema: 'public',
           table: 'meals',
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
-          console.log('Meal synced to cloud:', payload);
+        () => {
           toast.success('Meal logged and synced to cloud', {
             icon: '☁️',
             duration: 3000,
           });
-          queryClient.invalidateQueries({ queryKey: ['meals'] });
+          queryClient.invalidateQueries({ queryKey: ['meals', userId] });
         }
       )
       .on(
@@ -55,10 +53,10 @@ export function useRealtimeSync() {
           event: 'UPDATE',
           schema: 'public',
           table: 'meals',
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${userId}`,
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['meals'] });
+          queryClient.invalidateQueries({ queryKey: ['meals', userId] });
         }
       )
       .on(
@@ -67,15 +65,14 @@ export function useRealtimeSync() {
           event: 'DELETE',
           schema: 'public',
           table: 'meals',
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${userId}`,
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['meals'] });
+          queryClient.invalidateQueries({ queryKey: ['meals', userId] });
         }
       )
       .subscribe();
 
-      // Subscribe to glucose_readings table changes
       glucoseChannel = supabase
       .channel('glucose-sync')
       .on(
@@ -84,15 +81,14 @@ export function useRealtimeSync() {
           event: 'INSERT',
           schema: 'public',
           table: 'glucose_readings',
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
-          console.log('Glucose reading synced to cloud:', payload);
+        () => {
           toast.success('Glucose reading saved to cloud', {
             icon: '📊',
             duration: 3000,
           });
-          queryClient.invalidateQueries({ queryKey: ['glucose_readings'] });
+          queryClient.invalidateQueries({ queryKey: ['glucose_readings', userId] });
         }
       )
       .on(
@@ -101,10 +97,10 @@ export function useRealtimeSync() {
           event: 'UPDATE',
           schema: 'public',
           table: 'glucose_readings',
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${userId}`,
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['glucose_readings'] });
+          queryClient.invalidateQueries({ queryKey: ['glucose_readings', userId] });
         }
       )
       .on(
@@ -113,10 +109,10 @@ export function useRealtimeSync() {
           event: 'DELETE',
           schema: 'public',
           table: 'glucose_readings',
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${userId}`,
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['glucose_readings'] });
+          queryClient.invalidateQueries({ queryKey: ['glucose_readings', userId] });
         }
       )
       .subscribe();

@@ -1,6 +1,6 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { useProfile, useMeals, useUpdateProfile, dbProfileToHealthProfile } from '@/hooks/useSupabase';
+import { useProfile, useMeals, dbProfileToHealthProfile } from '@/hooks/useSupabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
@@ -12,14 +12,12 @@ import {
   Stethoscope, 
   Scale,
   LogOut,
-  Settings,
+  SquarePen,
   ShieldAlert,
-  Camera,
   Trash2,
   Clock,
   Mail,
 } from 'lucide-react';
-import { uploadAvatar, validateAvatarFile } from '@/lib/avatarStorage';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -37,9 +35,6 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 function ProfileContent() {
   const { signOut, user, deleteAccount } = useAuth();
-  const updateProfile = useUpdateProfile();
-  const avatarInputRef = useRef<HTMLInputElement>(null);
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const { data: dbProfile } = useProfile();
   const { data: dbMeals = [] } = useMeals();
@@ -53,34 +48,15 @@ function ProfileContent() {
     }
   }, [dbProfile]);
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user || !dbProfile) return;
-    const validation = validateAvatarFile(file);
-    if (!validation.valid) {
-      toast.error(validation.error);
-      return;
-    }
-    setIsUploadingAvatar(true);
-    try {
-      const url = await uploadAvatar(user.id, file);
-      await updateProfile.mutateAsync({ avatar_url: url });
-      toast.success('Profile picture updated');
-    } catch (error) {
-      toast.error('Failed to update picture');
-    } finally {
-      setIsUploadingAvatar(false);
-      e.target.value = '';
-    }
-  };
-
   const handleLogout = async () => {
     try {
       await signOut();
       toast.success('Logged out successfully');
       navigate('/');
     } catch (error) {
-      console.error('Logout error:', error);
+      if (import.meta.env.DEV) {
+        console.error('Logout error:', error);
+      }
       toast.error('Failed to log out');
     }
   };
@@ -118,6 +94,11 @@ function ProfileContent() {
   const goals = Array.isArray(healthProfile?.goals) ? healthProfile.goals : [];
   const dietaryRestrictions = Array.isArray(healthProfile?.dietaryRestrictions) ? healthProfile.dietaryRestrictions : [];
 
+  const displayInitial =
+    (typeof dbProfile?.name === 'string' && dbProfile.name ? dbProfile.name.charAt(0) : null) ||
+    (typeof dbProfile?.email === 'string' && dbProfile.email ? dbProfile.email.charAt(0) : null) ||
+    (user?.email ? user.email.charAt(0) : 'U');
+
   const profileSections = [
     {
       icon: Heart,
@@ -152,39 +133,9 @@ function ProfileContent() {
           className="mb-6 rounded-xl border border-border bg-card p-6"
         >
           <div className="flex items-center gap-4">
-            <div className="flex flex-col items-center gap-2">
-              <button
-                type="button"
-                onClick={() => avatarInputRef.current?.click()}
-                disabled={isUploadingAvatar}
-                className="relative flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-2xl font-bold text-primary ring-2 ring-background transition-opacity hover:opacity-90 disabled:opacity-50"
-              >
-                {typeof dbProfile?.avatar_url === 'string' && dbProfile.avatar_url ? (
-                  <img src={dbProfile.avatar_url} alt="Profile" className="h-full w-full object-cover" />
-                ) : (
-                  (typeof dbProfile?.name === 'string' && dbProfile.name ? dbProfile.name.charAt(0) : null) ||
-                  (typeof dbProfile?.email === 'string' && dbProfile.email ? dbProfile.email.charAt(0) : null) || 'U'
-                )}
-              </button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => avatarInputRef.current?.click()}
-                disabled={isUploadingAvatar}
-                className="h-8 text-xs"
-              >
-                <Camera className="mr-1.5 h-3.5 w-3.5" />
-                {isUploadingAvatar ? 'Uploading...' : 'Change photo'}
-              </Button>
+            <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary ring-2 ring-background">
+              {displayInitial.toUpperCase()}
             </div>
-            <input
-              ref={avatarInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={handleAvatarChange}
-              className="hidden"
-            />
             <div className="flex-1">
               <h2 className="text-xl font-bold">{typeof dbProfile?.name === 'string' ? dbProfile.name : 'User'}</h2>
               <p className="text-sm text-muted-foreground">
@@ -339,10 +290,10 @@ function ProfileContent() {
             variant="outline"
             className="w-full justify-start"
             size="lg"
-            onClick={() => avatarInputRef.current?.click()}
+            onClick={() => navigate('/profile/edit')}
           >
-            <Settings className="mr-3 h-5 w-5" />
-            Edit Profile Picture
+            <SquarePen className="mr-3 h-5 w-5" />
+            Edit Health Profile
           </Button>
           <Button
             variant="outline"

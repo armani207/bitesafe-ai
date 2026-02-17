@@ -13,15 +13,18 @@ import { useProfile } from "./hooks/useSupabase";
 // Lazy-load pages to reduce initial bundle and improve load time
 const Index = lazy(() => import("./pages/Index"));
 const AuthPage = lazy(() => import("./pages/AuthPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
 const ScanPage = lazy(() => import("./pages/ScanPage"));
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const MealDetailPage = lazy(() => import("./pages/MealDetailPage"));
 const InsightsPage = lazy(() => import("./pages/InsightsPage"));
 const GlucosePage = lazy(() => import("./pages/GlucosePage"));
+const EditProfilePage = lazy(() => import("./pages/EditProfilePage"));
+const TermsPage = lazy(() => import("./pages/TermsPage"));
+const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// ProfilePage loaded directly to avoid "Failed to fetch dynamically imported module" in dev
-import ProfilePage from "./pages/ProfilePage";
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -90,6 +93,9 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
         <Route
           path="/scan"
           element={
@@ -135,6 +141,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/edit"
+          element={
+            <ProtectedRoute>
+              <EditProfilePage />
             </ProtectedRoute>
           }
         />

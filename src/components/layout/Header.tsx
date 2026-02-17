@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
-import { useAppStore } from '@/store/appStore';
+import { useProfile } from '@/hooks/useSupabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { Utensils } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -11,7 +12,11 @@ interface HeaderProps {
 }
 
 export function Header({ title, subtitle, showGreeting, children }: HeaderProps) {
-  const userProfile = useAppStore((state) => state.userProfile);
+  const { user } = useAuth();
+  const { data: dbProfile } = useProfile();
+
+  const displayName = dbProfile?.name || user?.email?.split('@')[0] || 'User';
+  const initial = displayName.charAt(0).toUpperCase();
 
   return (
     <header className="header-banner relative overflow-hidden px-4 pb-8 pt-12 text-white">
@@ -29,26 +34,16 @@ export function Header({ title, subtitle, showGreeting, children }: HeaderProps)
               <span className="text-lg font-semibold tracking-tight">BiteSafe</span>
             </div>
           </motion.div>
-          {typeof userProfile?.avatar === 'string' && userProfile.avatar ? (
-            <motion.img
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              src={userProfile.avatar}
-              alt="Profile"
-              className="h-10 w-10 rounded-full border border-white/20 object-cover"
-            />
-          ) : (
-            <motion.div 
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-sm font-medium"
-            >
-              {typeof userProfile?.name === 'string' ? userProfile.name.charAt(0).toUpperCase() : 'U'}
-            </motion.div>
-          )}
+          <motion.div 
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-sm font-medium"
+          >
+            {initial}
+          </motion.div>
         </div>
 
-        {showGreeting && userProfile && (
+        {showGreeting && user && (
           <motion.div 
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -56,7 +51,7 @@ export function Header({ title, subtitle, showGreeting, children }: HeaderProps)
             className="mb-2"
           >
             <h1 className="text-xl font-semibold">
-              Welcome back, {typeof userProfile.name === 'string' ? userProfile.name.split(' ')[0] : 'User'}
+              Welcome back, {displayName.split(' ')[0]}
             </h1>
             <p className="text-sm text-white/80">Ready to analyze your next meal?</p>
           </motion.div>

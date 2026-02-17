@@ -23,7 +23,9 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught:', error?.message, error?.stack, errorInfo);
+    if (import.meta.env.DEV) {
+      console.error('ErrorBoundary caught:', error?.message, error?.stack, errorInfo);
+    }
   }
 
   handleRetry = () => {

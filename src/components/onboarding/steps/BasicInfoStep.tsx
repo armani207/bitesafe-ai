@@ -1,9 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, ArrowRight, Camera } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { HealthProfile, UserProfile } from '@/types/health';
+import { easeOut, tapScaleLight, springMicro } from '@/lib/animations';
 
 interface BasicInfoStepProps {
   data: Partial<UserProfile & HealthProfile>;
@@ -26,20 +28,6 @@ export function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicInfoStepP
   const [name, setName] = useState(data.name || '');
   const [diabetesType, setDiabetesType] = useState<DiabetesType>(data.diabetesType || 'none');
   const [usesInsulin, setUsesInsulin] = useState(data.usesInsulin || false);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>((data as { avatar_url?: string }).avatar_url || null);
-  const avatarFileRef = useRef<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!validTypes.includes(file.type)) return;
-    if (file.size > 2 * 1024 * 1024) return; // 2MB max
-    avatarFileRef.current = file;
-    setAvatarPreview(URL.createObjectURL(file));
-    onUpdate({ avatarFile: file } as unknown as Partial<UserProfile>);
-  };
 
   const handleContinue = () => {
     onUpdate({ name });
@@ -52,43 +40,40 @@ export function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicInfoStepP
   return (
     <div className="flex min-h-screen flex-col">
       <div className="flex items-center justify-between p-4 pt-8">
-        <button onClick={onBack} className="rounded-lg p-2 hover:bg-muted">
+        <motion.button
+          whileTap={tapScaleLight}
+          onClick={onBack}
+          className="rounded-lg p-2 hover:bg-muted"
+        >
           <ArrowLeft className="h-5 w-5" />
-        </button>
+        </motion.button>
         <span className="text-sm text-muted-foreground">Step 1 of 7</span>
       </div>
 
       <div className="flex-1 px-6">
-        <h2 className="mb-2 text-2xl font-bold">Let's get to know you</h2>
-        <p className="mb-8 text-muted-foreground">
+        <motion.h2
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: easeOut }}
+          className="mb-2 text-2xl font-bold"
+        >
+          Let's get to know you
+        </motion.h2>
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: easeOut, delay: 0.04 }}
+          className="mb-8 text-muted-foreground"
+        >
           This helps us personalize your experience
-        </p>
+        </motion.p>
 
         <div className="space-y-6">
-          <div className="flex flex-col items-center">
-            <Label className="mb-2">Profile Picture</Label>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-primary/30 bg-secondary/50 transition-colors hover:border-primary/50 hover:bg-secondary"
-            >
-              {avatarPreview ? (
-                <img src={avatarPreview} alt="Profile" className="h-full w-full object-cover" />
-              ) : (
-                <Camera className="h-10 w-10 text-muted-foreground" />
-              )}
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={handleAvatarChange}
-              className="hidden"
-            />
-            <p className="mt-2 text-xs text-muted-foreground">JPG, PNG or WebP (max 2MB)</p>
-          </div>
-
-          <div>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: easeOut, delay: 0.08 }}
+          >
             <Label htmlFor="name">Your Name</Label>
             <Input
               id="name"
@@ -97,16 +82,24 @@ export function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicInfoStepP
               placeholder="Enter your first name"
               className="mt-2"
             />
-          </div>
+          </motion.div>
 
-          <div>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: easeOut, delay: 0.12 }}
+          >
             <Label className="mb-3 block">Diabetes Status</Label>
             <div className="space-y-2">
-              {diabetesOptions.map((option) => (
-                <button
+              {diabetesOptions.map((option, i) => (
+                <motion.button
                   key={option.value}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, ease: easeOut, delay: 0.16 + i * 0.04 }}
+                  whileTap={tapScaleLight}
                   onClick={() => setDiabetesType(option.value)}
-                  className={`w-full rounded-xl border-2 p-4 text-left transition-all ${
+                  className={`w-full rounded-xl border-2 p-4 text-left transition-colors ${
                     diabetesType === option.value
                       ? 'border-primary bg-primary/5'
                       : 'border-border hover:border-primary/50'
@@ -116,42 +109,56 @@ export function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicInfoStepP
                   <div className="text-sm text-muted-foreground">
                     {option.description}
                   </div>
-                </button>
+                </motion.button>
               ))}
             </div>
-          </div>
+          </motion.div>
 
-          {(diabetesType === 'type1' || diabetesType === 'type2') && (
-            <div>
-              <Label className="mb-3 block">Do you use insulin?</Label>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setUsesInsulin(true)}
-                  className={`flex-1 rounded-xl border-2 py-3 font-medium transition-all ${
-                    usesInsulin
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                >
-                  Yes
-                </button>
-                <button
-                  onClick={() => setUsesInsulin(false)}
-                  className={`flex-1 rounded-xl border-2 py-3 font-medium transition-all ${
-                    !usesInsulin
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                >
-                  No
-                </button>
-              </div>
-            </div>
-          )}
+          <AnimatePresence>
+            {(diabetesType === 'type1' || diabetesType === 'type2') && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3, ease: easeOut }}
+              >
+                <Label className="mb-3 block">Do you use insulin?</Label>
+                <div className="flex gap-3">
+                  <motion.button
+                    whileTap={tapScaleLight}
+                    onClick={() => setUsesInsulin(true)}
+                    className={`flex-1 rounded-xl border-2 py-3 font-medium transition-colors ${
+                      usesInsulin
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    Yes
+                  </motion.button>
+                  <motion.button
+                    whileTap={tapScaleLight}
+                    onClick={() => setUsesInsulin(false)}
+                    className={`flex-1 rounded-xl border-2 py-3 font-medium transition-colors ${
+                      !usesInsulin
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    No
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
-      <div className="p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: easeOut, delay: 0.4 }}
+        className="p-6"
+      >
         <Button
           onClick={handleContinue}
           disabled={!isValid}
@@ -160,7 +167,7 @@ export function BasicInfoStep({ data, onUpdate, onNext, onBack }: BasicInfoStepP
         >
           Continue <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
-      </div>
+      </motion.div>
     </div>
   );
 }

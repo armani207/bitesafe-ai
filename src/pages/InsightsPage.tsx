@@ -25,7 +25,6 @@ const PersonalizedRecommendations = lazy(() =>
   }))
 );
 import {
-  TrendingUp, 
   Utensils, 
   BarChart3,
   Target,
@@ -82,7 +81,9 @@ export default function InsightsPage() {
       });
       toast.success('Weekly report downloaded successfully');
     } catch (error) {
-      console.error('Failed to generate PDF:', error);
+      if (import.meta.env.DEV) {
+        console.error('Failed to generate PDF:', error);
+      }
       toast.error('Failed to generate report');
     }
   };

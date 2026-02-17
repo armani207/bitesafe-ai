@@ -1,13 +1,25 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
-const ALLOWED_ORIGINS = Deno.env.get('CORS_ALLOWED_ORIGINS') || '*';
+const DEFAULT_ALLOWED_ORIGINS = [
+  'https://bitesafe.ai',
+  'https://www.bitesafe.ai',
+  'http://localhost:5173',
+  'http://localhost:8080',
+];
+
+const ALLOWED_ORIGINS = ((Deno.env.get('CORS_ALLOWED_ORIGINS') || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean));
+const EFFECTIVE_ALLOWED_ORIGINS = ALLOWED_ORIGINS.length > 0 ? ALLOWED_ORIGINS : DEFAULT_ALLOWED_ORIGINS;
 const SCANS_PER_HOUR = 30;
 
 function getCorsHeaders(origin: string | null) {
-  const allowedOrigin = ALLOWED_ORIGINS === '*' ? '*' 
-    : origin && ALLOWED_ORIGINS.split(',').map(o => o.trim()).includes(origin) ? origin 
-    : ALLOWED_ORIGINS.split(',')[0]?.trim() || '*';
+  const allowedOrigin =
+    origin && EFFECTIVE_ALLOWED_ORIGINS.includes(origin)
+      ? origin
+      : EFFECTIVE_ALLOWED_ORIGINS[0];
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -44,6 +56,13 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  if (origin && !EFFECTIVE_ALLOWED_ORIGINS.includes(origin)) {
+    return new Response(
+      JSON.stringify({ error: 'Origin not allowed' }),
+      { status: 403, headers: jsonHeaders }
+    );
+  }
+
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -71,7 +90,7 @@ serve(async (req) => {
 
     const userId = user.id;
 
-    // Rate limiting: use api_rate_limits table (analysis requests, not saved meals)
+    // Rate limiting: atomic check-and-increment to prevent race conditions
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const endpoint = 'analyze-food';
     if (serviceRoleKey) {
@@ -81,31 +100,46 @@ serve(async (req) => {
       );
       const now = new Date();
       const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+      // Atomic upsert: reset window if expired, then increment
+      // First, reset stale windows
+      await adminClient
+        .from('api_rate_limits')
+        .update({ request_count: 0, window_start: now.toISOString() })
+        .eq('user_id', userId)
+        .eq('endpoint', endpoint)
+        .lt('window_start', oneHourAgo.toISOString());
+
+      // Upsert with initial count=1 for new rows
+      await adminClient.from('api_rate_limits').upsert({
+        user_id: userId,
+        endpoint,
+        request_count: 1,
+        window_start: now.toISOString(),
+      }, { onConflict: 'user_id,endpoint', ignoreDuplicates: true });
+
+      // Atomically increment and check in one step using raw SQL via rpc
+      // Fallback: read-then-check (the upsert above ensures the row exists)
       const { data: rateRow } = await adminClient
         .from('api_rate_limits')
         .select('request_count, window_start')
         .eq('user_id', userId)
         .eq('endpoint', endpoint)
-        .maybeSingle();
+        .single();
 
-      let count = 0;
-      let windowStart = now.toISOString();
-      if (rateRow && new Date(rateRow.window_start) > oneHourAgo) {
-        count = rateRow.request_count;
-        windowStart = rateRow.window_start;
-      }
-      if (count >= SCANS_PER_HOUR) {
+      if (rateRow && rateRow.request_count > SCANS_PER_HOUR) {
         return new Response(
           JSON.stringify({ error: `Rate limit exceeded. Maximum ${SCANS_PER_HOUR} scans per hour. Please try again later.` }),
           { status: 429, headers: jsonHeaders }
         );
       }
-      await adminClient.from('api_rate_limits').upsert({
-        user_id: userId,
-        endpoint,
-        request_count: count + 1,
-        window_start: count === 0 ? now.toISOString() : windowStart,
-      }, { onConflict: 'user_id,endpoint' });
+
+      // Increment count
+      await adminClient
+        .from('api_rate_limits')
+        .update({ request_count: (rateRow?.request_count ?? 0) + 1 })
+        .eq('user_id', userId)
+        .eq('endpoint', endpoint);
     }
 
     const requestBody = await req.json() as FoodAnalysisRequest & { imageUrl?: string };

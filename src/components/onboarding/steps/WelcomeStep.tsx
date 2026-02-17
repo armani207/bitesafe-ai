@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { springGentle } from '@/lib/animations';
 import { Button } from '@/components/ui/button';
 import { Utensils, Shield, Zap, BarChart3 } from 'lucide-react';
@@ -78,7 +79,14 @@ export function WelcomeStep({ onNext }: WelcomeStepProps) {
           Get Started
         </Button>
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          By continuing, you agree to our Terms of Service and Privacy Policy
+          By continuing, you agree to our{' '}
+          <Link to="/terms" className="text-primary hover:underline">
+            Terms of Service
+          </Link>{' '}
+          and{' '}
+          <Link to="/privacy" className="text-primary hover:underline">
+            Privacy Policy
+          </Link>
         </p>
       </div>
     </div>

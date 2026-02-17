@@ -1,0 +1,21 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F172A"/>
+      <stop offset="1" stop-color="#1E293B"/>
+    </linearGradient>
+    <linearGradient id="pill" x1="240" y1="120" x2="960" y2="510" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563EB" stop-opacity="0.24"/>
+      <stop offset="1" stop-color="#06B6D4" stop-opacity="0.18"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="150" y="110" width="900" height="410" rx="32" fill="url(#pill)" stroke="#334155"/>
+  <circle cx="250" cy="210" r="34" fill="#3B82F6"/>
+  <path d="M234 210H266M250 194V226" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  <text x="310" y="224" fill="white" font-size="68" font-family="DM Sans, Arial, sans-serif" font-weight="700">BiteSafe</text>
+  <text x="310" y="288" fill="#BFDBFE" font-size="34" font-family="DM Sans, Arial, sans-serif">Diabetes-Friendly Meal Scanner</text>
+  <text x="310" y="354" fill="#CBD5E1" font-size="26" font-family="DM Sans, Arial, sans-serif">AI meal analysis " Risk scoring " 30-day insights</text>
+  <rect x="310" y="396" width="260" height="56" rx="14" fill="#2563EB"/>
+  <text x="344" y="432" fill="white" font-size="26" font-family="DM Sans, Arial, sans-serif" font-weight="600">Scan smarter</text>
+</svg>

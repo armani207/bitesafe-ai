@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, ArrowRight, Stethoscope } from 'lucide-react';
 import { HealthProfile, HealthcareProvider } from '@/types/health';
+import { easeOut, tapScaleLight } from '@/lib/animations';
 
 interface ProviderStepProps {
   data: Partial<HealthProfile>;
@@ -37,14 +39,23 @@ export function ProviderStep({ data, onUpdate, onNext, onBack }: ProviderStepPro
   return (
     <div className="flex min-h-screen flex-col">
       <div className="flex items-center justify-between p-4 pt-8">
-        <button onClick={onBack} className="rounded-lg p-2 hover:bg-muted">
+        <motion.button
+          whileTap={tapScaleLight}
+          onClick={onBack}
+          className="rounded-lg p-2 hover:bg-muted"
+        >
           <ArrowLeft className="h-5 w-5" />
-        </button>
+        </motion.button>
         <span className="text-sm text-muted-foreground">Step 6 of 7</span>
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 pb-24">
-        <div className="mb-6 flex items-center gap-3">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: easeOut }}
+          className="mb-6 flex items-center gap-3"
+        >
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <Stethoscope className="h-6 w-6" />
           </div>
@@ -52,10 +63,15 @@ export function ProviderStep({ data, onUpdate, onNext, onBack }: ProviderStepPro
             <h2 className="text-2xl font-bold">Healthcare info</h2>
             <p className="text-muted-foreground">Optional but helpful</p>
           </div>
-        </div>
+        </motion.div>
 
         <div className="space-y-5">
-          <div className="rounded-xl border border-border bg-card p-4">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: easeOut, delay: 0.08 }}
+            className="rounded-xl border border-border bg-card p-4"
+          >
             <h3 className="mb-4 font-semibold">Your Healthcare Provider</h3>
             <div className="space-y-4">
               <div>
@@ -109,9 +125,14 @@ export function ProviderStep({ data, onUpdate, onNext, onBack }: ProviderStepPro
                 />
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="rounded-xl border border-border bg-card p-4">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: easeOut, delay: 0.16 }}
+            className="rounded-xl border border-border bg-card p-4"
+          >
             <h3 className="mb-4 font-semibold">Current Medications</h3>
             <div>
               <Label htmlFor="medications">
@@ -129,7 +150,7 @@ export function ProviderStep({ data, onUpdate, onNext, onBack }: ProviderStepPro
                 This helps us understand potential interactions with foods
               </p>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
 

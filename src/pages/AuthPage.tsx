@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Activity, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { springGentle } from '@/lib/animations';
@@ -9,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function AuthPage() {
   const navigate = useNavigate();
   const { user, signUp, signIn } = useAuth();
@@ -16,24 +19,42 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
-  // If already authenticated, redirect
+  // If already authenticated, redirect (use Navigate component, not navigate() during render)
   if (user) {
-    navigate('/', { replace: true });
-    return null;
+    return <Navigate to="/" replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || password.length < 6) {
-      toast.error('Please enter a valid email and password (min 6 characters)');
+    const trimmedEmail = email.trim();
+    let hasError = false;
+    setEmailError('');
+    setPasswordError('');
+
+    if (!emailRegex.test(trimmedEmail)) {
+      setEmailError('Enter a valid email address');
+      hasError = true;
+    }
+    if (mode === 'signup' && password.length < 8) {
+      setPasswordError('Password must be at least 8 characters');
+      hasError = true;
+    }
+    if (mode === 'signin' && password.length < 1) {
+      setPasswordError('Enter your password');
+      hasError = true;
+    }
+    if (hasError) {
       return;
     }
 
     setIsSubmitting(true);
     try {
       if (mode === 'signup') {
-        const { error } = await signUp(email, password);
+        const { error } = await signUp(trimmedEmail, password);
         if (error) {
           const msg = error instanceof Error ? error.message : String(error);
           if (msg.includes('already been registered')) {
@@ -46,7 +67,7 @@ export default function AuthPage() {
         }
         toast.success('Account created! Setting up your profile...');
       } else {
-        const { error } = await signIn(email, password);
+        const { error } = await signIn(trimmedEmail, password);
         if (error) {
           const msg = error instanceof Error ? error.message : String(error);
           if (msg.includes('Invalid login credentials')) {
@@ -67,6 +88,27 @@ export default function AuthPage() {
       }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    const trimmed = email.trim();
+    if (!emailRegex.test(trimmed)) {
+      setEmailError('Enter a valid account email first');
+      return;
+    }
+    setIsSendingReset(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success('Password reset email sent');
+    } finally {
+      setIsSendingReset(false);
     }
   };
 
@@ -122,12 +164,18 @@ export default function AuthPage() {
                 type="email"
                 placeholder="you@example.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailError) setEmailError('');
+                }}
                 className="pl-10"
                 autoComplete="email"
                 autoFocus
               />
             </div>
+            {emailError && (
+              <p className="mt-1 text-xs text-destructive">{emailError}</p>
+            )}
           </div>
 
           <div>
@@ -139,13 +187,34 @@ export default function AuthPage() {
               <Input
                 id="auth-password"
                 type="password"
-                placeholder="Min 6 characters"
+                placeholder="Minimum 8 characters"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (passwordError) setPasswordError('');
+                }}
                 className="pl-10"
                 autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
               />
             </div>
+            {mode === 'signup' && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Use 8+ characters for better account security.
+              </p>
+            )}
+            {passwordError && (
+              <p className="mt-1 text-xs text-destructive">{passwordError}</p>
+            )}
+            {mode === 'signin' && (
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={isSendingReset}
+                className="mt-2 text-xs text-primary hover:underline disabled:opacity-60"
+              >
+                {isSendingReset ? 'Sending reset link...' : 'Forgot password?'}
+              </button>
+            )}
           </div>
 
           <Button
@@ -177,7 +246,14 @@ export default function AuthPage() {
           className="mt-8 max-w-xs text-center text-[11px] text-muted-foreground/70"
         >
           Your food logs are kept for 30 days, then automatically cleared.
-          By continuing, you agree to our Terms of Service and Privacy Policy.
+          {' '}By continuing, you agree to our{' '}
+          <Link to="/terms" className="text-primary hover:underline">
+            Terms of Service
+          </Link>{' '}
+          and{' '}
+          <Link to="/privacy" className="text-primary hover:underline">
+            Privacy Policy
+          </Link>.
         </motion.p>
       </div>
 
