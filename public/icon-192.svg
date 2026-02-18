@@ -1,0 +1,7 @@
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="192" height="192" rx="38" fill="#0d1119"/>
+  <rect x="6" y="6" width="180" height="180" rx="34" fill="#0F172A"/>
+  <circle cx="96" cy="80" r="36" fill="#3B82F6"/>
+  <path d="M80 80H112M96 64V96" stroke="white" stroke-width="7" stroke-linecap="round"/>
+  <text x="96" y="148" text-anchor="middle" fill="#BFDBFE" font-size="28" font-family="system-ui, -apple-system, sans-serif" font-weight="700">BiteSafe</text>
+</svg>
