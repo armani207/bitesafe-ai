@@ -28,6 +28,70 @@ export function ScanResults({ meal, onSave, onReset, isSaving }: ScanResultsProp
     ? 'Moderate glucose response expected'
     : 'Glucose likely to remain stable';
 
+  const nonFoodSuggestions = [
+    {
+      id: 'non-food-1',
+      icon: '🍽️',
+      text: 'To get a nutritional analysis, please upload an image that clearly shows food items.',
+      type: 'add' as const,
+    },
+    {
+      id: 'non-food-2',
+      icon: '📷',
+      text: 'Ensure your food is well-lit and centered in the frame for the best analysis.',
+      type: 'add' as const,
+    },
+  ];
+
+  if (meal.isNonFood) {
+    return (
+      <div className="space-y-4">
+        {meal.imageUrl && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, ease: easeOut }}
+            className="overflow-hidden rounded-2xl"
+          >
+            <img
+              src={meal.imageUrl || '/placeholder.svg'}
+              alt="Uploaded image"
+              loading="lazy"
+              className="aspect-[4/3] w-full object-cover"
+            />
+          </motion.div>
+        )}
+
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: easeOut, delay: 0.05 }}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <Target className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold">Risk Mitigation Actions</h3>
+          </div>
+          <SuggestionGrid
+            suggestions={nonFoodSuggestions}
+            onSelect={(s) => toast.info(`Recommended: ${s.text}`)}
+          />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: easeOut, delay: 0.1 }}
+          className="pb-4"
+        >
+          <Button type="button" onClick={onReset} variant="outline" size="lg" className="w-full">
+            <RefreshCw className="mr-2 h-5 w-5" />
+            Try Another Photo
+          </Button>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Meal image */}
