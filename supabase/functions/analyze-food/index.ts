@@ -14,6 +14,92 @@ const ALLOWED_ORIGINS = ((Deno.env.get('CORS_ALLOWED_ORIGINS') || '')
   .filter(Boolean));
 const EFFECTIVE_ALLOWED_ORIGINS = ALLOWED_ORIGINS.length > 0 ? ALLOWED_ORIGINS : DEFAULT_ALLOWED_ORIGINS;
 const SCANS_PER_HOUR = 30;
+const NON_FOOD_SUGGESTIONS = [
+  {
+    id: 'non-food-1',
+    icon: '🍽️',
+    text: 'To get a nutritional analysis, please upload an image that clearly shows food items.',
+    type: 'add',
+  },
+  {
+    id: 'non-food-2',
+    icon: '📷',
+    text: 'Ensure your food is well-lit and centered in the frame for the best analysis.',
+    type: 'add',
+  },
+] as const;
+
+function buildNonFoodPayload() {
+  return {
+    isFood: false,
+    foods: [],
+    totalCarbs: { min: 0, max: 0 },
+    totalProtein: 0,
+    totalFat: 0,
+    totalCalories: 0,
+    totalFiber: 0,
+    totalSugar: 0,
+    riskLevel: 'low',
+    riskScore: 0,
+    riskExplanation: 'No food detected in the image.',
+    suggestions: [...NON_FOOD_SUGGESTIONS],
+    tips: [],
+  };
+}
+
+function toNumber(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+function isLikelyNonFood(analysis: unknown): boolean {
+  if (!analysis || typeof analysis !== 'object') return false;
+  const row = analysis as {
+    isFood?: boolean;
+    foods?: unknown[];
+    totalCalories?: number;
+    totalProtein?: number;
+    totalFat?: number;
+    totalFiber?: number;
+    totalSugar?: number;
+    totalCarbs?: { min?: number; max?: number };
+    riskScore?: number;
+    riskExplanation?: string;
+    suggestions?: Array<{ text?: string }>;
+    tips?: string[];
+  };
+
+  if (row.isFood === false) return true;
+
+  const foods = Array.isArray(row.foods) ? row.foods : [];
+  const hasAnyFoods = foods.length > 0;
+  if (hasAnyFoods) return false;
+
+  const riskText = typeof row.riskExplanation === 'string' ? row.riskExplanation : '';
+  const suggestionText = Array.isArray(row.suggestions)
+    ? row.suggestions.map((s) => (typeof s?.text === 'string' ? s.text : '')).join(' ')
+    : '';
+  const tipsText = Array.isArray(row.tips) ? row.tips.join(' ') : '';
+  const combinedText = `${riskText} ${suggestionText} ${tipsText}`.toLowerCase();
+
+  const explicitNonFoodText =
+    /no food|non[-\s]?food|not food|does not contain food|doesn't contain food|no edible food/.test(combinedText) ||
+    /upload.*food|image.*food/.test(combinedText);
+
+  const carbsMin = toNumber(row.totalCarbs?.min);
+  const carbsMax = toNumber(row.totalCarbs?.max);
+  const riskScore = toNumber(row.riskScore);
+  const allZeroMetrics =
+    toNumber(row.totalCalories) <= 0 &&
+    toNumber(row.totalProtein) <= 0 &&
+    toNumber(row.totalFat) <= 0 &&
+    toNumber(row.totalFiber) <= 0 &&
+    toNumber(row.totalSugar) <= 0 &&
+    carbsMin <= 0 &&
+    carbsMax <= 0 &&
+    riskScore <= 0;
+
+  return explicitNonFoodText || allZeroMetrics;
+}
 
 function getCorsHeaders(origin: string | null) {
   const allowedOrigin =
@@ -49,18 +135,20 @@ interface FoodAnalysisRequest {
 
 serve(async (req) => {
   const origin = req.headers.get('Origin');
+
+  // Reject unauthorized origins before generating any CORS headers
+  if (origin && !EFFECTIVE_ALLOWED_ORIGINS.includes(origin)) {
+    return new Response(
+      JSON.stringify({ error: 'Origin not allowed' }),
+      { status: 403, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
   const corsHeaders = getCorsHeaders(origin);
   const jsonHeaders = { ...corsHeaders, 'Content-Type': 'application/json' };
 
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
-  }
-
-  if (origin && !EFFECTIVE_ALLOWED_ORIGINS.includes(origin)) {
-    return new Response(
-      JSON.stringify({ error: 'Origin not allowed' }),
-      { status: 403, headers: jsonHeaders }
-    );
   }
 
   try {
@@ -101,8 +189,7 @@ serve(async (req) => {
       const now = new Date();
       const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
-      // Atomic upsert: reset window if expired, then increment
-      // First, reset stale windows
+      // Step 1: Reset expired windows (older than 1 hour)
       await adminClient
         .from('api_rate_limits')
         .update({ request_count: 0, window_start: now.toISOString() })
@@ -110,31 +197,30 @@ serve(async (req) => {
         .eq('endpoint', endpoint)
         .lt('window_start', oneHourAgo.toISOString());
 
-      // Upsert with initial count=1 for new rows
+      // Step 2: Insert row for first-time users only; skip if row already exists
       await adminClient.from('api_rate_limits').upsert({
         user_id: userId,
         endpoint,
-        request_count: 1,
+        request_count: 0,
         window_start: now.toISOString(),
       }, { onConflict: 'user_id,endpoint', ignoreDuplicates: true });
 
-      // Atomically increment and check in one step using raw SQL via rpc
-      // Fallback: read-then-check (the upsert above ensures the row exists)
+      // Step 3: Read current count, then check limit BEFORE incrementing
       const { data: rateRow } = await adminClient
         .from('api_rate_limits')
-        .select('request_count, window_start')
+        .select('request_count')
         .eq('user_id', userId)
         .eq('endpoint', endpoint)
         .single();
 
-      if (rateRow && rateRow.request_count > SCANS_PER_HOUR) {
+      if (rateRow && rateRow.request_count >= SCANS_PER_HOUR) {
         return new Response(
           JSON.stringify({ error: `Rate limit exceeded. Maximum ${SCANS_PER_HOUR} scans per hour. Please try again later.` }),
           { status: 429, headers: jsonHeaders }
         );
       }
 
-      // Increment count
+      // Step 4: Increment count (only reached if under the limit)
       await adminClient
         .from('api_rate_limits')
         .update({ request_count: (rateRow?.request_count ?? 0) + 1 })
@@ -237,38 +323,49 @@ serve(async (req) => {
       );
     }
 
-    // Build personalized context from health profile
+    // Build personalized context from health profile (defensive -- fields may be missing)
     let profileContext = '';
-    if (healthProfile) {
-      const conditions = healthProfile.conditions?.map(c => c.name).join(', ') || '';
-      const goals = healthProfile.goals?.map(g => g.name).join(', ') || '';
-      const allergies = healthProfile.allergies?.join(', ') || '';
-      
-      profileContext = `\nUser Health Profile:
-- Diabetes Type: ${healthProfile.diabetesType}
-- Uses Insulin: ${healthProfile.usesInsulin ? 'Yes' : 'No'}
-- Conditions: ${conditions || 'None specified'}
-- Health Goals: ${goals || 'None specified'}
-- Allergies: ${allergies || 'None'}
-- Age: ${healthProfile.age}
-- Weight: ${healthProfile.weight}kg
-- Activity Level: ${healthProfile.activityLevel}`;
+    if (healthProfile && typeof healthProfile === 'object') {
+      const conditions = Array.isArray(healthProfile.conditions)
+        ? healthProfile.conditions.map(c => c?.name).filter(Boolean).join(', ')
+        : '';
+      const goals = Array.isArray(healthProfile.goals)
+        ? healthProfile.goals.map(g => g?.name).filter(Boolean).join(', ')
+        : '';
+      const allergies = Array.isArray(healthProfile.allergies)
+        ? healthProfile.allergies.filter(Boolean).join(', ')
+        : '';
+
+      const lines: string[] = [];
+      if (healthProfile.diabetesType) lines.push(`- Diabetes Type: ${healthProfile.diabetesType}`);
+      lines.push(`- Uses Insulin: ${healthProfile.usesInsulin ? 'Yes' : 'No'}`);
+      if (conditions) lines.push(`- Conditions: ${conditions}`);
+      if (goals) lines.push(`- Health Goals: ${goals}`);
+      if (allergies) lines.push(`- Allergies: ${allergies}`);
+      if (healthProfile.age) lines.push(`- Age: ${healthProfile.age}`);
+      if (healthProfile.weight) lines.push(`- Weight: ${healthProfile.weight}kg`);
+      if (healthProfile.activityLevel) lines.push(`- Activity Level: ${healthProfile.activityLevel}`);
+
+      if (lines.length > 0) {
+        profileContext = `\nUser Health Profile:\n${lines.join('\n')}`;
+      }
     }
 
     const systemPrompt = `You are an expert nutritionist AI for BiteSafe, a diabetes-focused food scanner.
 
 CRITICAL INSTRUCTIONS:
-1. Look VERY carefully at the actual food in the image. Identify each distinct food item you can see.
-2. Do NOT guess or hallucinate foods that are not visible. Only list what you can clearly see.
-3. Estimate portions based on visual cues (plate size, food proportions, depth).
-4. Use USDA nutritional data for accurate macronutrient values.
-5. Be specific with food names (e.g. "White Rice" not just "Rice", "Grilled Chicken Thigh" not just "Chicken").
+1. First decide if the image contains edible food.
+2. If image does NOT contain food (e.g. person, pet, landscape, object, document), set "isFood" to false and return ONLY the non-food response format below.
+3. If image contains food, set "isFood" to true and perform full meal analysis.
+4. Do NOT guess or hallucinate foods that are not visible. Only list what you can clearly see.
+5. Use USDA nutritional data for accurate macronutrient values.
 
 IMPORTANT: This is decision support, NOT medical advice.
 ${profileContext}
 
 Respond ONLY with a valid JSON object (no markdown fences, no explanation text). Use this exact schema:
 {
+  "isFood": boolean,
   "foods": [
     {
       "name": "Specific food name as seen in image",
@@ -295,6 +392,26 @@ Respond ONLY with a valid JSON object (no markdown fences, no explanation text).
     { "id": "1", "icon": "emoji", "text": "Actionable suggestion specific to this meal", "type": "portion" | "swap" | "add" | "activity" | "timing" }
   ],
   "tips": ["Tip 1", "Tip 2"]
+}
+
+When isFood is false, return this exact minimal structure:
+{
+  "isFood": false,
+  "foods": [],
+  "totalCarbs": { "min": 0, "max": 0 },
+  "totalProtein": 0,
+  "totalFat": 0,
+  "totalCalories": 0,
+  "totalFiber": 0,
+  "totalSugar": 0,
+  "riskLevel": "low",
+  "riskScore": 0,
+  "riskExplanation": "No food detected in the image.",
+  "suggestions": [
+    { "id": "non-food-1", "icon": "🍽️", "text": "To get a nutritional analysis, please upload an image that clearly shows food items.", "type": "add" },
+    { "id": "non-food-2", "icon": "📷", "text": "Ensure your food is well-lit and centered in the frame for the best analysis.", "type": "add" }
+  ],
+  "tips": []
 }
 
 Risk scoring guide:
@@ -401,6 +518,11 @@ Provide 2-4 actionable suggestions tailored to the specific foods seen.`;
         JSON.stringify({ error: 'Failed to parse food analysis. Try again.' }),
         { status: 500, headers: jsonHeaders }
       );
+    }
+
+    if (isLikelyNonFood(analysisData)) {
+      console.log('Non-food image detected');
+      analysisData = buildNonFoodPayload();
     }
 
     console.log('Food analysis completed successfully');

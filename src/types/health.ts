@@ -64,6 +64,7 @@ export interface MealAnalysis {
   id: string;
   timestamp: Date;
   imageUrl: string;
+  isNonFood?: boolean;
   foods: FoodItem[];
   totalCarbs: { min: number; max: number };
   totalProtein: number;

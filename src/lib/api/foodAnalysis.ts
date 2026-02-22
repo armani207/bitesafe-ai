@@ -10,6 +10,28 @@ function logDevError(...args: unknown[]) {
   if (import.meta.env.DEV) console.error(...args);
 }
 
+function buildNonFoodMeal(imageBase64: string, suggestions: MealSuggestion[]): MealAnalysis {
+  return {
+    id: crypto.randomUUID(),
+    timestamp: new Date(),
+    imageUrl: imageBase64,
+    isNonFood: true,
+    foods: [],
+    totalCarbs: { min: 0, max: 0 },
+    totalProtein: 0,
+    totalFat: 0,
+    totalCalories: 0,
+    totalFiber: 0,
+    totalSugar: 0,
+    riskLevel: 'low',
+    riskScore: 0,
+    riskExplanation: 'No food detected in the image.',
+    suggestions,
+    tips: [],
+    saved: false,
+  };
+}
+
 /** Check if a real API key is configured (either backend Edge Function or local dev key) */
 export function hasApiKey(): boolean {
   // In all environments, analysis must go through the Edge Function.
@@ -83,7 +105,23 @@ export async function analyzeFoodImage(
   }
   analysis = await callEdgeFunction(imageBase64, accessToken, healthProfile);
 
+  const nonFoodSuggestions: MealSuggestion[] = [
+    {
+      id: 'non-food-1',
+      icon: '🍽️',
+      text: 'To get a nutritional analysis, please upload an image that clearly shows food items.',
+      type: 'add',
+    },
+    {
+      id: 'non-food-2',
+      icon: '📷',
+      text: 'Ensure your food is well-lit and centered in the frame for the best analysis.',
+      type: 'add',
+    },
+  ];
+
   const typed = analysis as {
+    isFood?: boolean;
     foods: FoodItem[];
     totalCarbs: { min: number; max: number };
     totalProtein: number;
@@ -97,6 +135,31 @@ export async function analyzeFoodImage(
     suggestions: MealSuggestion[];
     tips: string[];
   };
+
+  const foods = Array.isArray(typed.foods) ? typed.foods : [];
+  const noFoods = foods.length === 0;
+  const textBlob = `${typed.riskExplanation ?? ''} ${
+    Array.isArray(typed.suggestions) ? typed.suggestions.map((s) => s?.text ?? '').join(' ') : ''
+  } ${Array.isArray(typed.tips) ? typed.tips.join(' ') : ''}`.toLowerCase();
+
+  const explicitNonFoodText =
+    /no food|non[-\s]?food|not food|does not contain food|doesn't contain food|no edible food/.test(textBlob) ||
+    /upload.*food|image.*food/.test(textBlob);
+
+  const allZeroMetrics =
+    (typed.totalCarbs?.min ?? 0) <= 0 &&
+    (typed.totalCarbs?.max ?? 0) <= 0 &&
+    (typed.totalProtein ?? 0) <= 0 &&
+    (typed.totalFat ?? 0) <= 0 &&
+    (typed.totalCalories ?? 0) <= 0 &&
+    (typed.totalFiber ?? 0) <= 0 &&
+    (typed.totalSugar ?? 0) <= 0 &&
+    (typed.riskScore ?? 0) <= 0;
+
+  const inferNonFood = typed.isFood === false || (noFoods && (explicitNonFoodText || allZeroMetrics));
+  if (inferNonFood) {
+    return buildNonFoodMeal(imageBase64, nonFoodSuggestions);
+  }
 
   if (!typed.foods || !Array.isArray(typed.foods)) {
     throw new Error('AI could not identify foods. Try a clearer photo.');
