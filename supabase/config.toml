@@ -1,4 +1,7 @@
-project_id = "mbidjukamsjjmapcmgmr"
+project_id = "oomswpsscdfyfoxpwgbj"
 
 [functions.analyze-food]
+verify_jwt = false
+
+[functions.delete-user]
 verify_jwt = false

@@ -49,7 +49,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <p className="mt-2 max-w-md text-center text-sm text-muted-foreground">
             {msg}
           </p>
-          {err?.stack && (
+          {import.meta.env.DEV && err?.stack && (
             <pre className="mt-3 max-h-32 overflow-auto rounded bg-muted p-2 text-[10px] text-left">
               {err.stack}
             </pre>

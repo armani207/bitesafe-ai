@@ -84,11 +84,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const deleteAccount = async (): Promise<{ error: Error | null }> => {
     try {
+      const { data: { session: current } } = await supabase.auth.getSession();
+      const accessToken = current?.access_token;
+      if (!accessToken) {
+        return { error: new Error('Not signed in.') };
+      }
+
+      const { error: fnError } = await supabase.functions.invoke('delete-user', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (fnError) {
+        return {
+          error: new Error(fnError.message || 'Failed to delete account'),
+        };
+      }
+
       await supabase.auth.signOut();
       queryClient.clear();
       setUser(null);
       setSession(null);
-      // Clear any Supabase auth tokens from localStorage
       if (typeof localStorage !== 'undefined') {
         const keysToRemove: string[] = [];
         for (let i = 0; i < localStorage.length; i++) {

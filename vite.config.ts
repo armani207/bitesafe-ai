@@ -7,7 +7,7 @@ import { VitePWA } from "vite-plugin-pwa";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const supabaseUrl = env.VITE_SUPABASE_URL || "https://mbidjukamsjjmapcmgmr.supabase.co";
+  const supabaseUrl = env.VITE_SUPABASE_URL || "https://oomswpsscdfyfoxpwgbj.supabase.co";
 
   return {
   server: {
@@ -53,6 +53,7 @@ export default defineConfig(({ mode }) => {
       includeAssets: ["icon-192.png", "icon-512.png", "apple-touch-icon.png", "og-image.svg"],
       manifest: false, // we supply our own public/manifest.json
       workbox: {
+        mode: "development", // workaround: workbox+terser race; main bundle still minified by esbuild
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         runtimeCaching: [
           {

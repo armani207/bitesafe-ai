@@ -297,6 +297,28 @@ export function useAddGlucoseReading() {
   });
 }
 
+export function useDeleteGlucoseReading() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (readingId: string) => {
+      if (!user) throw new Error('Not authenticated');
+      const { error } = await supabase
+        .from('glucose_readings')
+        .delete()
+        .eq('id', readingId)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      return readingId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['glucose_readings', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['glucose_readings', 'infinite', user?.id] });
+    },
+  });
+}
+
 // 30-day meal retention: delete meals older than 30 days
 export async function cleanupOldMeals(userId: string): Promise<number> {
   const cutoff = new Date();

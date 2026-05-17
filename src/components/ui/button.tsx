@@ -49,7 +49,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         transition={springMicro}
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
-        {...(props as React.ComponentPropsWithoutRef<typeof motion.button>)}
+        {...(props as unknown as React.ComponentPropsWithoutRef<typeof motion.button>)}
       />
     );
   },
