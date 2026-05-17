@@ -98,12 +98,10 @@ export async function analyzeFoodImage(
   const imageBase64 = imageInput.base64 || imageInput.url || '';
   if (!imageBase64) throw new Error('No image provided');
 
-  let analysis: Record<string, unknown>;
-
   if (!accessToken || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
     throw new Error('Session missing. Please sign in again and retry.');
   }
-  analysis = await callEdgeFunction(imageBase64, accessToken, healthProfile);
+  const analysis: Record<string, unknown> = await callEdgeFunction(imageBase64, accessToken, healthProfile);
 
   const nonFoodSuggestions: MealSuggestion[] = [
     {

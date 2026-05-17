@@ -66,14 +66,15 @@ function ProfileContent() {
     try {
       const { error } = await deleteAccount();
       if (error) {
-        toast.error(error.message || 'Failed to reset');
+        toast.error(error.message || 'Failed to delete account');
         return;
       }
-      toast.success('Account reset. You can start fresh.');
+      toast.success('Account deleted.');
       navigate('/');
       window.location.reload();
     } catch (error) {
-      toast.error('Failed to reset account');
+      if (import.meta.env.DEV) console.error('Delete account error:', error);
+      toast.error('Failed to delete account');
     } finally {
       setIsResetting(false);
     }
@@ -313,14 +314,14 @@ function ProfileContent() {
                 disabled={isResetting}
               >
                 <Trash2 className="mr-3 h-5 w-5" />
-                Reset account / Delete login
+                Delete account
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Reset account?</AlertDialogTitle>
+                <AlertDialogTitle>Permanently delete account?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will sign you out and clear all stored login data from this device. You can create a new account or sign in again.
+                  This permanently deletes your account, profile, meal history, and glucose readings. This action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -331,8 +332,9 @@ function ProfileContent() {
                     handleResetAccount();
                   }}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={isResetting}
                 >
-                  Reset account
+                  {isResetting ? 'Deleting…' : 'Delete account'}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -351,7 +353,7 @@ const ProfileErrorFallback = ({ error }: { error?: Error }) => (
     <p className="mt-2 max-w-md text-center text-sm text-muted-foreground">
       {error?.message ?? 'Could not load profile.'}
     </p>
-    {error?.stack && (
+    {import.meta.env.DEV && error?.stack && (
       <pre className="mt-3 max-h-24 overflow-auto rounded bg-muted p-2 text-[10px] text-left">
         {error.stack}
       </pre>
